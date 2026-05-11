@@ -670,7 +670,7 @@
 }
 
 .message-row.assistant .message-bubble:has(.markdown-table-wrap) {
-  width: min(78%, 900px);
+  width: fit-content;
   max-width: min(78%, 900px);
 }
 
@@ -787,15 +787,16 @@
 
 .markdown-table-wrap {
   display: block;
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border: 1px solid #d8dcdf;
+  border-radius: 10px;
   background: #ffffff;
   box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .markdown-table-helper {
@@ -803,33 +804,60 @@
 }
 
 .markdown-table-wrap table {
-  width: 100%;
+  width: max-content;
+  max-width: none;
   min-width: 0;
-  table-layout: fixed;
-  border-collapse: collapse;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
   color: #1a1a1a;
-  font-size: 12.5px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .markdown-table-wrap th,
 .markdown-table-wrap td {
-  border: 1px solid #e5e5e5;
-  padding: 10px 12px;
+  border: 0;
+  border-right: 1px solid #e1e4e6;
+  border-bottom: 1px solid #e1e4e6;
+  padding: 8px 11px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   overflow-wrap: break-word;
   word-break: normal;
+  white-space: normal;
+}
+
+.markdown-table-wrap th:last-child,
+.markdown-table-wrap td:last-child {
+  border-right: 0;
+}
+
+.markdown-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .markdown-table-wrap th {
-  background: #f4f4f4;
+  background: #f2f4f5;
+  color: #3b3f41;
   font-weight: 700;
 }
 
 .markdown-table-wrap td {
   background: #ffffff;
   font-weight: 400;
+}
+
+.markdown-table-wrap tbody tr:nth-child(even) td {
+  background: #fafbfb;
+}
+
+.markdown-table-wrap th:first-child,
+.markdown-table-wrap td:first-child {
+  width: 1%;
+  min-width: 34px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .message-image-attachment {
@@ -3684,30 +3712,20 @@
   }
 
   .markdown-table-wrap table {
-    width: 100%;
-    min-width: 520px;
+    width: max-content;
+    min-width: min(100%, 340px);
     table-layout: auto;
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 12.5px;
+    line-height: 1.45;
   }
 
   .markdown-table-helper {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    display: block;
-    border-bottom: 1px solid #e5e5e5;
-    padding: 7px 8px;
-    background: #ffffff;
-    color: #8c8c8c;
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 1.35;
+    display: none;
   }
 
   .markdown-table-wrap th,
   .markdown-table-wrap td {
-    padding: 8px;
+    padding: 7px 9px;
     overflow-wrap: break-word;
   }
 

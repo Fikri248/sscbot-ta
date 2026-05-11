@@ -5,12 +5,15 @@ import {
   asksForMovieRecommendation,
   asksForSynopsis,
   buildCompactMovieContext,
+  findMovieTitleLookupResult,
+  findMoviesByActorQuery,
   getCatalogMoviesPage,
   getFilteredCatalogBrowseLabel,
   getFilteredCatalogBrowseMovies,
   getGenreSummaryMessage,
   getMovieCatalogCount,
   getRelevantMovies,
+  isActorLookupIntent,
   isCatalogCountIntent,
   isFilteredCatalogBrowseIntent,
   isCatalogListIntent,
@@ -20,7 +23,9 @@ import {
   isMoodLiftingMoviePrompt,
   isOutOfScopeMovieBotIntent,
   isSadFilmMoviePrompt,
+  isTitleCastIntent,
 } from "./movieRetrieval";
+import type { ActorLookupResult, TitleLookupResult } from "./movieRetrieval";
 import type { Movie } from "../types/movie";
 import type { ChatMessage, ChatRole, ChatSource } from "../types/chat";
 import movieCatalogJson from "../data/film_indonesia_2026.json";
@@ -48,6 +53,10 @@ const MOVIEBOT_WEB_SEARCH_UNNEEDED_MESSAGE =
   "MovieBot praktikum memakai katalog lokal film Indonesia 2026, jadi Web Search tidak diperlukan.";
 const MOVIEBOT_OUT_OF_SCOPE_FALLBACK_MESSAGE =
   "Maaf, saya hanya bisa membantu rekomendasi dan informasi film Indonesia tahun 2026 dari katalog MovieBot. Mau saya rekomendasikan film berdasarkan genre atau mood?";
+const MOVIEBOT_ACTOR_NOT_FOUND_FALLBACK_MESSAGE =
+  "Maaf, saya belum menemukan aktor tersebut di katalog film Indonesia 2026 MovieBot.";
+const MOVIEBOT_TITLE_NOT_FOUND_FALLBACK_MESSAGE =
+  "Maaf, saya belum menemukan judul film tersebut di katalog MovieBot.";
 const UNSUPPORTED_REQUEST_CONFIGURATION_MESSAGE =
   "Model yang dipilih tidak mendukung konfigurasi request ini. Pilih model chat biasa untuk menjalankan MovieBot, seperti Llama 3.1 8B atau Llama 3.3 70B.";
 const FOREIGN_MOVIE_GUIDANCE =
@@ -613,6 +622,10 @@ function hasGenericGenreMoodRequest(cleanContent: string) {
 }
 
 function isCatalogTitleNotFoundPrompt(cleanContent: string) {
+  if (isActorLookupIntent(cleanContent)) {
+    return false;
+  }
+
   if (messageMentionsCatalogTitle(cleanContent)) {
     return false;
   }
@@ -776,6 +789,22 @@ function getMovieBotLocalFallback(messages: ChatMessage[]) {
       };
     }
 
+    if (isTitleCastIntent(latestUserMessage)) {
+      const titleLookup = findMovieTitleLookupResult(latestUserMessage);
+
+      return {
+        content: getTitleCastLookupMessage(titleLookup),
+      };
+    }
+
+    const actorLookup = findMoviesByActorQuery(latestUserMessage);
+
+    if (actorLookup) {
+      return {
+        content: getActorLookupMessage(actorLookup),
+      };
+    }
+
     if (isLongRecommendationRequest(cleanContent)) {
       return {
         content: getLongRecommendationRedirectMessage(latestUserMessage),
@@ -842,6 +871,99 @@ function getMovieListTableRows(movies: Movie[], startIndex = 0) {
     "|---:|---|---|---|---:|",
     ...rows.map((row) => `| ${row} |`),
   ].join("\n");
+}
+
+function getActorMovieTableRows(movies: Movie[]) {
+  const rows = movies.map((movie) =>
+    [
+      movie.title,
+      movie.genres.join(", "),
+      movie.rating,
+      `${movie.durationMinutes}m`,
+    ]
+      .map(sanitizeMarkdownTableCell)
+      .join(" | "),
+  );
+
+  return [
+    "| Judul | Genre | Rating | Durasi |",
+    "|---|---|---|---:|",
+    ...rows.map((row) => `| ${row} |`),
+  ].join("\n");
+}
+
+function getCastTableRows(movie: Movie) {
+  return [
+    "| No | Aktor |",
+    "|---:|---|",
+    ...movie.actors.map(
+      (actorName, index) =>
+        `| ${index + 1} | ${sanitizeMarkdownTableCell(actorName)} |`,
+    ),
+  ].join("\n");
+}
+
+function getTitleOptionsTableRows(movies: Movie[]) {
+  const rows = movies.map((movie, index) =>
+    [
+      index + 1,
+      movie.title,
+      movie.genres.join(", "),
+    ]
+      .map(sanitizeMarkdownTableCell)
+      .join(" | "),
+  );
+
+  return [
+    "| No | Judul | Genre |",
+    "|---:|---|---|",
+    ...rows.map((row) => `| ${row} |`),
+  ].join("\n");
+}
+
+function getTitleCastLookupMessage(titleLookup: TitleLookupResult) {
+  const { movie, alternatives } = titleLookup;
+
+  if (!movie) {
+    if (alternatives.length > 1) {
+      return [
+        "Saya menemukan beberapa judul yang mirip. Maksud Anda yang mana?",
+        "",
+        getTitleOptionsTableRows(alternatives),
+      ].join("\n");
+    }
+
+    return MOVIEBOT_TITLE_NOT_FOUND_FALLBACK_MESSAGE;
+  }
+
+  return [
+    `${movie.title} dibintangi oleh:`,
+    "",
+    getCastTableRows(movie),
+  ].join("\n");
+}
+
+function getActorLookupMessage(actorLookup: ActorLookupResult) {
+  if (actorLookup.matches.length === 0) {
+    return MOVIEBOT_ACTOR_NOT_FOUND_FALLBACK_MESSAGE;
+  }
+
+  if (actorLookup.matches.length === 1) {
+    const [match] = actorLookup.matches;
+
+    return [
+      `Ditemukan film dengan aktor ${match.actorName} di katalog MovieBot:`,
+      "",
+      getActorMovieTableRows(match.movies),
+    ].join("\n");
+  }
+
+  const actorNames = actorLookup.matches
+    .map((match) => match.actorName)
+    .join(", ");
+  const searchTerm = actorLookup.searchTerms.join(", ");
+
+  return `Saya menemukan beberapa aktor yang mirip dengan "${searchTerm}": ${actorNames}. Maksud Anda yang mana?`;
 }
 
 function getCatalogListPageMessage(pageIndex: number) {

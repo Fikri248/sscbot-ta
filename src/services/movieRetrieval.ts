@@ -118,10 +118,65 @@ const OUT_OF_SCOPE_PATTERNS = [
 ];
 const ARITHMETIC_EXPRESSION_PATTERN =
   /(?:^|[\s(])\d+(?:\s*(?:[+*x/]|:|-)\s*\d+)+(?:[\s).?!,]|$)/;
+const TITLE_CAST_REQUEST_PATTERN =
+  /\b(?:siapa|apa)\s+(?:aja|saja)?\s*(?:aktor|aktris|pemain|pemeran|cast)(?:nya)?\b|\b(?:aktor|aktris|pemain|pemeran|cast)(?:nya)?\s+film\b|\bdibintangi\s+siapa\b/;
+const ACTOR_FILMOGRAPHY_REQUEST_PATTERN =
+  /\b(?:aktor|aktris|pemain)\s+.+?\s+(?:main\s+)?di\s+film\s+(?:apa|mana)\b|\b.+?\s+main\s+(?:di\s+)?film\s+(?:apa|mana)\b/;
+const ACTOR_QUERY_STOP_WORDS = new Set([
+  "ada",
+  "aja",
+  "aktris",
+  "aktor",
+  "apa",
+  "cast",
+  "dengan",
+  "di",
+  "dibintangi",
+  "film",
+  "indonesia",
+  "katalog",
+  "main",
+  "mana",
+  "moviebot",
+  "pemain",
+  "pemeran",
+  "saja",
+  "siapa",
+  "tahun",
+  "yang",
+]);
+const TITLE_QUERY_STOP_WORDS = new Set([
+  ...ACTOR_QUERY_STOP_WORDS,
+  "judul",
+  "oleh",
+]);
 
 type ScoredMovie = {
   movie: Movie;
   score: number;
+};
+
+type ScoredTitleMatch = {
+  movie: Movie;
+  cleanTitle: string;
+  coverage: number;
+  matchedTokenCount: number;
+  score: number;
+};
+
+export type ActorMovieMatch = {
+  actorName: string;
+  movies: Movie[];
+};
+
+export type ActorLookupResult = {
+  searchTerms: string[];
+  matches: ActorMovieMatch[];
+};
+
+export type TitleLookupResult = {
+  movie: Movie | null;
+  alternatives: Movie[];
 };
 
 export type CatalogGenreCount = {
@@ -147,6 +202,299 @@ function includesNormalizedPhrase(content: string, phrase: string) {
   return new RegExp(`(?:^|\\s)${escapeRegExp(phrase)}(?:\\s|$)`).test(
     content,
   );
+}
+
+function getMeaningfulTitleTokens(content: string) {
+  return normalizeSearchText(content)
+    .split(" ")
+    .filter(
+      (token) =>
+        token.length >= 2 &&
+        !TITLE_QUERY_STOP_WORDS.has(token),
+    );
+}
+
+function titleTokenMatchesQuery(titleToken: string, queryToken: string) {
+  return (
+    titleToken === queryToken ||
+    (queryToken.length >= 4 && titleToken.startsWith(queryToken))
+  );
+}
+
+function getTitleTokenMatchCount(titleTokens: string[], queryTokens: string[]) {
+  const matchedTitleTokens = new Set<string>();
+
+  titleTokens.forEach((titleToken) => {
+    if (
+      queryTokens.some((queryToken) =>
+        titleTokenMatchesQuery(titleToken, queryToken),
+      )
+    ) {
+      matchedTitleTokens.add(titleToken);
+    }
+  });
+
+  return matchedTitleTokens.size;
+}
+
+function compareTitleMatches(
+  firstMatch: ScoredTitleMatch,
+  secondMatch: ScoredTitleMatch,
+) {
+  return (
+    secondMatch.score - firstMatch.score ||
+    secondMatch.coverage - firstMatch.coverage ||
+    secondMatch.matchedTokenCount - firstMatch.matchedTokenCount ||
+    secondMatch.cleanTitle.length - firstMatch.cleanTitle.length
+  );
+}
+
+function getActorQueryTokens(query: string) {
+  return normalizeSearchText(query)
+    .split(" ")
+    .filter(
+      (token) =>
+        token.length >= 3 &&
+        !ACTOR_QUERY_STOP_WORDS.has(token),
+    );
+}
+
+function actorTokenMatchesQuery(actorToken: string, queryToken: string) {
+  return (
+    actorToken === queryToken ||
+    (queryToken.length >= 4 && actorToken.startsWith(queryToken))
+  );
+}
+
+export function actorMatchesQuery(actorName: string, query: string) {
+  const actorTokens = getActorQueryTokens(actorName);
+  const queryTokens = getActorQueryTokens(query);
+
+  if (actorTokens.length === 0 || queryTokens.length === 0) {
+    return false;
+  }
+
+  return queryTokens.every((queryToken) =>
+    actorTokens.some((actorToken) =>
+      actorTokenMatchesQuery(actorToken, queryToken),
+    ),
+  );
+}
+
+export function findMovieTitleLookupResult(message: string): TitleLookupResult {
+  const cleanContent = normalizeSearchText(message);
+
+  if (!cleanContent) {
+    return {
+      movie: null,
+      alternatives: [],
+    };
+  }
+
+  const titleIndex = movieCatalog
+    .map((movie) => ({
+      movie,
+      cleanTitle: normalizeSearchText(movie.title),
+      titleTokens: getMeaningfulTitleTokens(movie.title),
+    }));
+
+  const [exactMatch] = titleIndex
+    .filter(({ cleanTitle }) =>
+      Boolean(cleanTitle && includesNormalizedPhrase(cleanContent, cleanTitle)),
+    )
+    .sort(
+      (firstMatch, secondMatch) =>
+        secondMatch.cleanTitle.length - firstMatch.cleanTitle.length,
+    );
+
+  if (exactMatch) {
+    return {
+      movie: exactMatch.movie,
+      alternatives: [],
+    };
+  }
+
+  const queryTokens = getMeaningfulTitleTokens(cleanContent);
+
+  if (queryTokens.length === 0) {
+    return {
+      movie: null,
+      alternatives: [],
+    };
+  }
+
+  const scoredMatches = titleIndex
+    .map(({ movie, cleanTitle, titleTokens }): ScoredTitleMatch => {
+      const matchedTokenCount = getTitleTokenMatchCount(titleTokens, queryTokens);
+      const coverage =
+        titleTokens.length > 0 ? matchedTokenCount / titleTokens.length : 0;
+
+      return {
+        movie,
+        cleanTitle,
+        coverage,
+        matchedTokenCount,
+        score: matchedTokenCount * 10 + coverage * 4 + titleTokens.length / 100,
+      };
+    })
+    .filter(({ matchedTokenCount }) => matchedTokenCount > 0)
+    .sort(compareTitleMatches);
+
+  const confidentMatches = scoredMatches.filter(
+    ({ matchedTokenCount }) => matchedTokenCount >= 2,
+  );
+
+  if (confidentMatches.length === 0) {
+    return {
+      movie: null,
+      alternatives: scoredMatches.slice(0, 5).map(({ movie }) => movie),
+    };
+  }
+
+  const [bestMatch, secondBestMatch] = confidentMatches;
+
+  if (
+    secondBestMatch &&
+    bestMatch.matchedTokenCount === secondBestMatch.matchedTokenCount &&
+    Math.abs(bestMatch.coverage - secondBestMatch.coverage) < 0.15
+  ) {
+    return {
+      movie: null,
+      alternatives: confidentMatches.slice(0, 5).map(({ movie }) => movie),
+    };
+  }
+
+  return {
+    movie: bestMatch.movie,
+    alternatives: [],
+  };
+}
+
+export function findMovieByTitleQuery(message: string) {
+  return findMovieTitleLookupResult(message).movie;
+}
+
+export function isTitleCastIntent(message: string) {
+  const cleanContent = normalizeSearchText(message);
+
+  if (!cleanContent) {
+    return false;
+  }
+
+  const hasCastTerm =
+    TITLE_CAST_REQUEST_PATTERN.test(cleanContent) ||
+    /\b(?:aktor|aktris|pemain|pemeran|cast)\b/.test(cleanContent);
+  const hasTitleMatch = findMovieTitleLookupResult(cleanContent).movie !== null;
+
+  if (hasCastTerm && hasTitleMatch) {
+    return true;
+  }
+
+  if (ACTOR_FILMOGRAPHY_REQUEST_PATTERN.test(cleanContent)) {
+    return false;
+  }
+
+  return TITLE_CAST_REQUEST_PATTERN.test(cleanContent);
+}
+
+function getGenreMoodLookupTerms() {
+  return new Set(
+    [
+      ...Object.entries(GENRE_KEYWORDS).flatMap(([keyword, value]) => [
+        keyword,
+        ...(Array.isArray(value) ? value : [value]),
+      ]),
+      ...Object.entries(MOOD_KEYWORDS).flatMap(([keyword, value]) => [
+        keyword,
+        ...(Array.isArray(value) ? value : [value]),
+      ]),
+      "rekomendasi",
+      "semua",
+    ].map(normalizeSearchText),
+  );
+}
+
+const NON_ACTOR_LOOKUP_TERMS = getGenreMoodLookupTerms();
+
+function isLikelyNonActorCandidate(candidate: string) {
+  const tokens = getActorQueryTokens(candidate);
+
+  return (
+    tokens.length === 0 ||
+    tokens.every((token) => NON_ACTOR_LOOKUP_TERMS.has(token))
+  );
+}
+
+function cleanActorCandidate(candidate: string) {
+  return normalizeSearchText(candidate)
+    .replace(/\b(?:dong|ya|sih|nih|please|tolong)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function addActorSearchTerm(
+  terms: string[],
+  candidate: string | undefined,
+  allowGenericCandidate = true,
+) {
+  if (!candidate) {
+    return;
+  }
+
+  const cleanCandidate = cleanActorCandidate(candidate);
+
+  if (
+    !cleanCandidate ||
+    (!allowGenericCandidate && isLikelyNonActorCandidate(cleanCandidate))
+  ) {
+    return;
+  }
+
+  terms.push(cleanCandidate);
+}
+
+export function extractActorSearchTerms(message: string) {
+  const cleanContent = normalizeSearchText(message);
+  const terms: string[] = [];
+
+  if (!cleanContent || isTitleCastIntent(cleanContent)) {
+    return terms;
+  }
+
+  addActorSearchTerm(
+    terms,
+    cleanContent.match(
+      /\b(?:aktor|aktris|pemain)\s+(.+?)\s+(?:main\s+)?di\s+film\s+(?:apa|mana)\b/,
+    )?.[1],
+  );
+  addActorSearchTerm(
+    terms,
+    cleanContent.match(/\b(.+?)\s+main\s+(?:di\s+)?film\s+(?:apa|mana)\b/)?.[1],
+  );
+  addActorSearchTerm(
+    terms,
+    cleanContent.match(/\bfilm\s+yang\s+dibintangi\s+(.+)$/)?.[1],
+  );
+  addActorSearchTerm(
+    terms,
+    cleanContent.match(/\bdibintangi\s+(.+)$/)?.[1],
+  );
+  addActorSearchTerm(
+    terms,
+    cleanContent.match(/\bfilm\s+dengan\s+(?:aktor|aktris|pemain)\s+(.+)$/)
+      ?.[1],
+  );
+  addActorSearchTerm(
+    terms,
+    cleanContent.match(/\bada\s+film\s+(.+?)(?:\s+di\s+katalog)?$/)?.[1],
+    false,
+  );
+
+  return [...new Set(terms)];
+}
+
+export function isActorLookupIntent(message: string) {
+  return extractActorSearchTerms(message).length > 0;
 }
 
 function getRequestedValues(
@@ -270,7 +618,11 @@ function getStrongMatches(cleanContent: string) {
       }
 
       actors.forEach((actor) => {
-        if (actor && includesNormalizedPhrase(cleanContent, actor)) {
+        if (
+          actor &&
+          (includesNormalizedPhrase(cleanContent, actor) ||
+            actorMatchesQuery(actor, cleanContent))
+        ) {
           score += 5;
         }
       });
@@ -432,6 +784,42 @@ export function getMovieCatalogCount() {
   return movieCatalog.length;
 }
 
+export function findMoviesByActorQuery(message: string): ActorLookupResult | null {
+  const searchTerms = extractActorSearchTerms(message);
+
+  if (searchTerms.length === 0) {
+    return null;
+  }
+
+  const matchesByActor = new Map<string, Movie[]>();
+
+  movieCatalog.forEach((movie) => {
+    movie.actors.forEach((actorName) => {
+      if (
+        !searchTerms.some((searchTerm) =>
+          actorMatchesQuery(actorName, searchTerm),
+        )
+      ) {
+        return;
+      }
+
+      const movies = matchesByActor.get(actorName) ?? [];
+      movies.push(movie);
+      matchesByActor.set(actorName, movies);
+    });
+  });
+
+  return {
+    searchTerms,
+    matches: Array.from(matchesByActor, ([actorName, movies]) => ({
+      actorName,
+      movies: dedupeMovies(movies),
+    })).sort((firstMatch, secondMatch) =>
+      firstMatch.actorName.localeCompare(secondMatch.actorName, "id"),
+    ),
+  };
+}
+
 export function getCatalogGenreCounts(): CatalogGenreCount[] {
   const counts = new Map<string, number>();
 
@@ -534,6 +922,10 @@ export function getRelevantMovies(
       .filter(({ movie }) => !isMoodLiftingExcludedMovie(movie));
 
     return dedupeMovies(fallbackMovies.map(({ movie }) => movie)).slice(0, limit);
+  }
+
+  if (isActorLookupIntent(userMessage)) {
+    return [];
   }
 
   if (asksForMovieRecommendation(userMessage)) {
