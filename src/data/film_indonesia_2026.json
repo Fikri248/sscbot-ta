@@ -1,0 +1,1272 @@
+[
+  {
+    "id": "film-id-001",
+    "title": "Suka Duka Tawa",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Komedi"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "ringan",
+      "menghibur"
+    ],
+    "director": "Aco Tenriyagelli",
+    "actors": [
+      "Rachel Amanda",
+      "Teuku Rifnu Wikana",
+      "Marissa Anita",
+      "Bintang Emon",
+      "Enzy Storia",
+      "Gilang Bhaskara"
+    ],
+    "rating": "SU",
+    "durationMinutes": 95,
+    "synopsis": "Komika muda bertemu kembali dengan ayahnya dan menemukan banyak hal yang selama ini tidak diketahuinya, diiringi tawa dan haru bersama teman-teman setia."
+  },
+  {
+    "id": "film-id-002",
+    "title": "Musuh dalam Selimut",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Thriller"
+    ],
+    "moodTags": [
+      "tegang",
+      "menegangkan",
+      "pengkhianatan"
+    ],
+    "director": "Hadrah Daeng Ratu",
+    "actors": [
+      "Yasmin Napper",
+      "Megan Domani",
+      "Arbani Yasiz",
+      "Willem Bevers"
+    ],
+    "rating": "17+",
+    "durationMinutes": 100,
+    "synopsis": "Seorang wanita curiga bahwa tetangga sekaligus temannya menyimpan perasaan lebih terhadap sang suami dan mulai menjadi ancaman bagi pernikahan mereka."
+  },
+  {
+    "id": "film-id-003",
+    "title": "Uang Passolo",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi"
+    ],
+    "moodTags": [
+      "lucu",
+      "ringan",
+      "menghibur"
+    ],
+    "director": "Andi Burhamzah",
+    "actors": [
+      "Imran Ismail",
+      "Masita Aspam",
+      "Jade Thamrin",
+      "Adhy Basto",
+      "Reynold Lawalata"
+    ],
+    "rating": "13+",
+    "durationMinutes": 90,
+    "synopsis": "Komedi tentang perjuangan mencari uang dengan cara-cara yang tak terduga di tengah kehidupan sehari-hari."
+  },
+  {
+    "id": "film-id-004",
+    "title": "Malam 3 Yasinan",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "menegangkan",
+      "mistis"
+    ],
+    "director": "Yannie Sukarya",
+    "actors": [
+      "Wulan Guritno",
+      "Hamish Daud",
+      "Baim Wong",
+      "Shalom Razade",
+      "Piet Pagau"
+    ],
+    "rating": "17+",
+    "durationMinutes": 95,
+    "synopsis": "Teror mistis yang terjadi pada malam ketiga setelah sebuah kematian di kampung terpencil."
+  },
+  {
+    "id": "film-id-005",
+    "title": "Alas Roban",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "gelap",
+      "mistis"
+    ],
+    "director": "Hadrah Daeng Ratu",
+    "actors": [
+      "Michelle Ziudith",
+      "Rio Dewanto",
+      "Taskya Namya",
+      "Fara Shakila",
+      "Imelda Therinne"
+    ],
+    "rating": "17+",
+    "durationMinutes": 100,
+    "synopsis": "Seorang ibu tunggal dan anaknya yang memiliki keterbatasan penglihatan mengalami kejadian-kejadian aneh saat bus mereka mogok di jalur angker Alas Roban."
+  },
+  {
+    "id": "film-id-006",
+    "title": "Penunggu Rumah: Buto Ijo",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "menegangkan"
+    ],
+    "director": "Achmad Romie",
+    "actors": [
+      "Gandhi Fernando",
+      "Celine Evangelista",
+      "Valerie Thomas",
+      "Adnan Putra Djani"
+    ],
+    "rating": "17+",
+    "durationMinutes": 98,
+    "synopsis": "Sebuah keluarga baru pindah rumah dan menghadapi teror dari makhluk Buto Ijo yang menghuni rumah tersebut."
+  },
+  {
+    "id": "film-id-007",
+    "title": "Penerbangan Terakhir",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Thriller"
+    ],
+    "moodTags": [
+      "tegang",
+      "psikologis",
+      "menegangkan"
+    ],
+    "director": "Benni Setiawan",
+    "actors": [
+      "Jerome Kurnia",
+      "Nadya Arina",
+      "Aghniny Haque",
+      "Nasya Marcella",
+      "Devina Bertha"
+    ],
+    "rating": "13+",
+    "durationMinutes": 105,
+    "synopsis": "Skandal gila dalam dunia penerbangan melibatkan seorang pilot berkharisma yang memberikan perhatian berlebih kepada banyak pramugari, memicu hubungan penuh permainan psikologis."
+  },
+  {
+    "id": "film-id-008",
+    "title": "Esok Tanpa Ibu",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "sedih",
+      "keluarga"
+    ],
+    "director": "Ho Wi Ding",
+    "actors": [
+      "Ali Fikry",
+      "Ringgo Agus Rahman",
+      "Dian Sastrowardoyo",
+      "Aisha Nurra Datau"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Anak bernama Rama yang sering berselisih dengan ayahnya harus menghadapi situasi sulit ketika ibunya koma, lalu mencoba menghadirkan kembali sang ibu lewat bantuan AI."
+  },
+  {
+    "id": "film-id-009",
+    "title": "Sebelum Dijemput Nenek",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi",
+      "Horor"
+    ],
+    "moodTags": [
+      "lucu",
+      "seram",
+      "ringan"
+    ],
+    "director": "Fajar Martha Santosa",
+    "actors": [
+      "Angga Yunanda",
+      "Dodit Mulyanto",
+      "Wavi Zihan",
+      "Oki Rengga",
+      "Nopek Novian"
+    ],
+    "rating": "13+",
+    "durationMinutes": 95,
+    "synopsis": "Komedi horor tentang seseorang yang harus menyelesaikan urusan duniawi sebelum dijemput oleh neneknya yang sudah tiada."
+  },
+  {
+    "id": "film-id-010",
+    "title": "Sengkolo: Petaka Satu Suro",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "gelap"
+    ],
+    "director": "Deni Saputra",
+    "actors": [
+      "Aulia Sarah",
+      "Agla Artalidia",
+      "Cindy Nirmala",
+      "Miqdad Addausy",
+      "Dimas Aditya"
+    ],
+    "rating": "17+",
+    "durationMinutes": 100,
+    "synopsis": "Teror yang terjadi pada malam satu Suro mengancam keselamatan seluruh warga desa."
+  },
+  {
+    "id": "film-id-011",
+    "title": "Kafir: Gerbang Sukma",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "gelap"
+    ],
+    "director": "Azhar Kinoi Lubis",
+    "actors": [
+      "Putri Ayudya",
+      "Rangga Azof",
+      "Nadya Arina",
+      "Indah Permatasari",
+      "Sujiwo Tejo"
+    ],
+    "rating": "17+",
+    "durationMinutes": 105,
+    "synopsis": "Sekuel horor yang mengisahkan gerbang dunia lain yang terbuka dan mengancam jiwa manusia."
+  },
+  {
+    "id": "film-id-012",
+    "title": "Kuyank",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "menegangkan"
+    ],
+    "director": "Johansyah Jumberan",
+    "actors": [
+      "Rio Dewanto",
+      "Dayu Wijanto",
+      "Jolene Marie",
+      "Putri Intan Kasela",
+      "Barry Prima"
+    ],
+    "rating": "17+",
+    "durationMinutes": 90,
+    "synopsis": "Cinta pasangan muda Rusmiati dan Badri yang kalah oleh tekanan adat memunculkan teror baru lewat ajian Kuyang yang mengancam bayi dan wanita hamil."
+  },
+  {
+    "id": "film-id-013",
+    "title": "Tuhan, Benarkah Kau Mendengarku?",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "inspiratif",
+      "spiritual"
+    ],
+    "director": "Jay Sukmo",
+    "actors": [
+      "Revalina S. Temat",
+      "Gunawan Sudrajat",
+      "Megan Domani",
+      "Annisa Kaila"
+    ],
+    "rating": "13+",
+    "durationMinutes": 110,
+    "synopsis": "Kisah seorang perempuan yang mencari jawaban atas doa-doanya di tengah cobaan hidup bertubi-tubi."
+  },
+  {
+    "id": "film-id-014",
+    "title": "Ahlan Singapore",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Komedi"
+    ],
+    "moodTags": [
+      "menghibur",
+      "ringan",
+      "romansa"
+    ],
+    "director": "Indra Gunawan",
+    "actors": [
+      "Kiesha Alvaro",
+      "Rebecca Klopper",
+      "Ibrahim Risyad",
+      "Putri Ayudya",
+      "Ferry Salim"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Petualangan seorang pemuda Indonesia di Singapura yang berujung pada penemuan cinta dan jati diri."
+  },
+  {
+    "id": "film-id-015",
+    "title": "Check Out Sekarang, Pay Later",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi",
+      "Romansa"
+    ],
+    "moodTags": [
+      "lucu",
+      "romansa",
+      "ringan"
+    ],
+    "director": "Ardy Octaviand",
+    "actors": [
+      "Amanda Manopo",
+      "Devano Danendra",
+      "Fajar Sadboy",
+      "Jovial da Lopez",
+      "Lukman Sardi"
+    ],
+    "rating": "13+",
+    "durationMinutes": 120,
+    "synopsis": "Komedi romantis tentang dua orang yang tak terduga jatuh cinta saat berbelanja online."
+  },
+  {
+    "id": "film-id-016",
+    "title": "Balas Budi",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi",
+      "Drama"
+    ],
+    "moodTags": [
+      "menghibur",
+      "hangat",
+      "keluarga"
+    ],
+    "director": "Reka Wijaya",
+    "actors": [
+      "Yoshi Sudarso",
+      "Michelle Ziudith",
+      "Gisella Anastasia",
+      "Niken Anjani",
+      "Ferry Salim"
+    ],
+    "rating": "13+",
+    "durationMinutes": 95,
+    "synopsis": "Kisah tentang membalas budi baik seseorang yang berujung pada petualangan tak terduga."
+  },
+  {
+    "id": "film-id-017",
+    "title": "AIU-EO: Macam Betool Aja",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi"
+    ],
+    "moodTags": [
+      "lucu",
+      "absurd",
+      "menghibur"
+    ],
+    "director": "Etienne Caesar",
+    "actors": [
+      "Michelle Ziudith",
+      "Lolox",
+      "Oki Rengga",
+      "Andri Mashadi",
+      "Adi Sudirja"
+    ],
+    "rating": "13+",
+    "durationMinutes": 90,
+    "synopsis": "Komedi absurd yang mengikuti petualangan sekelompok teman dengan situasi konyol dan tak masuk akal."
+  },
+  {
+    "id": "film-id-018",
+    "title": "Rumah Tanpa Cahaya",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Horor"
+    ],
+    "moodTags": [
+      "gelap",
+      "menegangkan",
+      "suram"
+    ],
+    "director": "Ody Harahap",
+    "actors": [
+      "Ira Wibowo",
+      "Donny Damara",
+      "Lavicky Nicholas",
+      "Ridwan Ghany",
+      "Dea Annisa"
+    ],
+    "rating": "17+",
+    "durationMinutes": 100,
+    "synopsis": "Sebuah keluarga yang tinggal di rumah tanpa cahaya menyimpan rahasia kelam yang akhirnya terungkap."
+  },
+  {
+    "id": "film-id-019",
+    "title": "Jangan Seperti Bapak",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Laga",
+      "Drama"
+    ],
+    "moodTags": [
+      "tegang",
+      "mengharukan",
+      "seru"
+    ],
+    "director": "Daniel Tito Pakpahan",
+    "actors": [
+      "Zee Asadel",
+      "Verdi Solaiman",
+      "Donny Damara",
+      "Aulia Sarah",
+      "Zack Lee"
+    ],
+    "rating": "17+",
+    "durationMinutes": 110,
+    "synopsis": "Seorang anak berusaha tidak mengikuti jejak ayahnya yang hidup di dunia kriminal."
+  },
+  {
+    "id": "film-id-020",
+    "title": "Antara Mama, Cinta dan Surga",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "keluarga",
+      "spiritual"
+    ],
+    "director": "Agustinus Sitorus",
+    "actors": [
+      "Aldy Maldini",
+      "Anneth Delliecia",
+      "Joe P Project",
+      "Dominique Sanda",
+      "Cok Simbara"
+    ],
+    "rating": "13+",
+    "durationMinutes": 105,
+    "synopsis": "Drama keluarga berlatar Sumatera Utara tentang cinta seorang ibu dan pengorbanannya demi kebahagiaan anak-anaknya."
+  },
+  {
+    "id": "film-id-021",
+    "title": "Titip Bunda di Surga-Mu",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "sedih",
+      "spiritual"
+    ],
+    "director": "Hanny R. Saputra",
+    "actors": [
+      "Acha Septriasa",
+      "Kevin Julio",
+      "Meriam Bellina",
+      "Ikang Fawzi",
+      "Abun Sungkar"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Kisah perpisahan seorang anak dengan ibunya yang sakit, diiringi doa dan keikhlasan."
+  },
+  {
+    "id": "film-id-022",
+    "title": "Lift",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor",
+      "Thriller"
+    ],
+    "moodTags": [
+      "seram",
+      "menegangkan",
+      "misteri"
+    ],
+    "director": "Randy Chans",
+    "actors": [
+      "Ismi Melinda",
+      "Shareefa Daanish",
+      "Verdi Solaiman",
+      "Teuku Rifnu Wikana",
+      "Alfie Alfandy"
+    ],
+    "rating": "17+",
+    "durationMinutes": 90,
+    "synopsis": "Enam tahun setelah kecelakaan lift mematikan, Linda terjebak di dalam lift dan dipaksa berhadapan dengan suara misterius yang mengungkit tragedi lama."
+  },
+  {
+    "id": "film-id-023",
+    "title": "Setan Alas!",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "gelap"
+    ],
+    "director": "Yusron Fuadi",
+    "actors": [
+      "Anastasia Herzigova",
+      "Adhin Abdul Hakim",
+      "Putri Anggi",
+      "Hanung Bramantyo"
+    ],
+    "rating": "17+",
+    "durationMinutes": 95,
+    "synopsis": "Lima mahasiswa yang mengisi akhir pekan di sebuah vila tua harus berjuang untuk bertahan hidup melawan teror yang mengancam nyawa mereka."
+  },
+  {
+    "id": "film-id-024",
+    "title": "Juara Sejati",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Olahraga"
+    ],
+    "moodTags": [
+      "inspiratif",
+      "semangat",
+      "mengharukan"
+    ],
+    "director": "Alex Latief",
+    "actors": [
+      "Adli Umar",
+      "Raissa Siregar",
+      "Xendra Basel",
+      "Yati Surachman",
+      "Asrul Dahlan"
+    ],
+    "rating": "13+",
+    "durationMinutes": 110,
+    "synopsis": "Kisah perjuangan seorang atlet muda untuk meraih gelar juara di tengah berbagai rintangan hidup."
+  },
+  {
+    "id": "film-id-025",
+    "title": "Senin Harga Naik",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Komedi"
+    ],
+    "moodTags": [
+      "ringan",
+      "sosial",
+      "menghibur"
+    ],
+    "director": "Dinna Jasanti",
+    "actors": [
+      "Meriam Bellina",
+      "Nadya Arina",
+      "Andri Mashadi",
+      "Hamish Daud",
+      "Brandon Salim"
+    ],
+    "rating": "13+",
+    "durationMinutes": 95,
+    "synopsis": "Satire sosial tentang dampak kenaikan harga kebutuhan pokok terhadap kehidupan masyarakat kecil."
+  },
+  {
+    "id": "film-id-026",
+    "title": "Tunggu Aku Sukses Nanti",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "inspiratif",
+      "mengharukan",
+      "semangat"
+    ],
+    "director": "Naya Anindita",
+    "actors": [
+      "Ardit Erwandha",
+      "Niniek L. Karim",
+      "Soleh Solihun",
+      "Jamie Aditya",
+      "Afgan"
+    ],
+    "rating": "13+",
+    "durationMinutes": 105,
+    "synopsis": "Perjuangan seorang pemuda dari keluarga sederhana untuk meraih kesuksesan demi membahagiakan orang tuanya."
+  },
+  {
+    "id": "film-id-027",
+    "title": "Na Willa",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "keluarga",
+      "nostalgia"
+    ],
+    "director": "Ryan Adriandhy",
+    "actors": [
+      "Luisa Adreena",
+      "Freya Mikhayla",
+      "Ira Wibowo",
+      "Melissa Karim",
+      "Putri Ayudya"
+    ],
+    "rating": "SU",
+    "durationMinutes": 95,
+    "synopsis": "Adaptasi novel tentang petualangan seorang gadis kecil bernama Na Willa di Jakarta era 1950-an."
+  },
+  {
+    "id": "film-id-028",
+    "title": "Pelangi di Mars",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Fantasi",
+      "Drama"
+    ],
+    "moodTags": [
+      "imajinatif",
+      "inspiratif",
+      "penuh warna"
+    ],
+    "director": "Upie Guava",
+    "actors": [
+      "Messi Gusti",
+      "Lutesha",
+      "Rio Dewanto",
+      "Livy Renata",
+      "Gilang Dirga"
+    ],
+    "rating": "SU",
+    "durationMinutes": 100,
+    "synopsis": "Kisah seorang anak yang bermimpi pergi ke Mars dan menemukan pelangi di sana demi menyelamatkan bumi."
+  },
+  {
+    "id": "film-id-029",
+    "title": "Danur: The Last Chapter",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "menegangkan",
+      "mistis"
+    ],
+    "director": "Awi Suryadi",
+    "actors": [
+      "Prilly Latuconsina",
+      "Zee Asadel",
+      "Dian Nitami",
+      "Dito Darmawan",
+      "Pritt Timothy"
+    ],
+    "rating": "17+",
+    "durationMinutes": 110,
+    "synopsis": "Chapter terakhir dari saga Danur yang mengakhiri kisah teror para hantu anak-anak sahabat Risa."
+  },
+  {
+    "id": "film-id-030",
+    "title": "Suzzanna: Santet Dosa di Atas Dosa",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "klasik"
+    ],
+    "director": "Azhar Kinoi Lubis",
+    "actors": [
+      "Luna Maya",
+      "Reza Rahadian",
+      "Clift Sangra",
+      "Iwa K",
+      "Nunung"
+    ],
+    "rating": "17+",
+    "durationMinutes": 105,
+    "synopsis": "Kelanjutan kisah Suzzanna yang kini menghadapi santet berlapis yang lebih jahat dari sebelumnya."
+  },
+  {
+    "id": "film-id-031",
+    "title": "Yohanna",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "spiritual",
+      "keluarga"
+    ],
+    "director": "Ertanto Robby Soediskam",
+    "actors": [
+      "Laura Basuki",
+      "Videlis Siprianus Diki",
+      "Kirana Grasela",
+      "Jajang C. Noer"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Kisah seorang perempuan bernama Yohanna yang berjuang mencari makna hidup di tengah tekanan keluarga."
+  },
+  {
+    "id": "film-id-032",
+    "title": "Ayah, Ini Arahnya Kemana, Ya?",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Komedi"
+    ],
+    "moodTags": [
+      "hangat",
+      "keluarga",
+      "lucu"
+    ],
+    "director": "Kuntz Agus",
+    "actors": [
+      "Rey Bong",
+      "Mawar Eva de Jongh",
+      "Dwi Sasono",
+      "Unique Priscilla",
+      "Dinda Kanya Dewi"
+    ],
+    "rating": "SU",
+    "durationMinutes": 95,
+    "synopsis": "Road trip seorang ayah dan anaknya yang berujung pada petualangan seru sekaligus mempererat hubungan mereka."
+  },
+  {
+    "id": "film-id-033",
+    "title": "Tiba-Tiba Setan",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi",
+      "Horor"
+    ],
+    "moodTags": [
+      "lucu",
+      "seram",
+      "ringan"
+    ],
+    "director": "Etienne Caesar",
+    "actors": [
+      "Lolox",
+      "Oki Rengga",
+      "Ratu Felisha",
+      "Poppy Sovia",
+      "Tanta Ginting"
+    ],
+    "rating": "13+",
+    "durationMinutes": 95,
+    "synopsis": "Komedi horor tentang seseorang yang tiba-tiba bisa melihat setan dan harus beradaptasi dengan kemampuan barunya."
+  },
+  {
+    "id": "film-id-034",
+    "title": "Ghost in the Cell",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor",
+      "Thriller"
+    ],
+    "moodTags": [
+      "seram",
+      "menegangkan",
+      "gelap"
+    ],
+    "director": "Joko Anwar",
+    "actors": [
+      "Abimana Aryasatya",
+      "Tora Sudiro",
+      "Aming",
+      "Lukman Sardi",
+      "Morgan Oey",
+      "Rio Dewanto"
+    ],
+    "rating": "17+",
+    "durationMinutes": 115,
+    "synopsis": "Teror supranatural yang melanda sebuah penjara ketika arwah tahanan yang terbunuh bangkit mencari keadilan."
+  },
+  {
+    "id": "film-id-035",
+    "title": "Dalam Sujudku",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "spiritual",
+      "mengharukan",
+      "inspiratif"
+    ],
+    "director": "Rico Michael",
+    "actors": [
+      "Marcell Darwin",
+      "Vinessa Inez",
+      "Naura Hakim",
+      "Dennis Adhiswara",
+      "Dominique Sanda"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Kisah seorang pria yang menemukan ketenangan dan jawaban hidup melalui perjalanan spiritualnya."
+  },
+  {
+    "id": "film-id-036",
+    "title": "Para Perasuk",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Horor"
+    ],
+    "moodTags": [
+      "menegangkan",
+      "gelap",
+      "mistis"
+    ],
+    "director": "Wregas Bhanuteja",
+    "actors": [
+      "Angga Yunanda",
+      "Chicco Kurniawan",
+      "Anggun C. Sasmi",
+      "Maudy Ayunda",
+      "Bryan Domani"
+    ],
+    "rating": "17+",
+    "durationMinutes": 100,
+    "synopsis": "Sekelompok orang yang kerasukan makhluk halus secara bersamaan dan perjuangan untuk membebaskan diri."
+  },
+  {
+    "id": "film-id-037",
+    "title": "Dilan ITB 1997",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Romansa"
+    ],
+    "moodTags": [
+      "romansa",
+      "nostalgia",
+      "mengharukan"
+    ],
+    "director": "Fajar Bustomi",
+    "actors": [
+      "Nazril Irham",
+      "Niken Anjani",
+      "Raline Shah",
+      "Ira Wibowo",
+      "Arya Saloka"
+    ],
+    "rating": "13+",
+    "durationMinutes": 110,
+    "synopsis": "Kelanjutan kisah cinta Dilan dan Milea saat Dilan menjalani kehidupan di bangku kuliah ITB tahun 1997."
+  },
+  {
+    "id": "film-id-038",
+    "title": "Ku Peluk Kamu Selamanya",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Romansa"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "romansa",
+      "sedih"
+    ],
+    "director": "Pritagita Arianegara",
+    "actors": [
+      "Hana Malasan",
+      "Jared Ali",
+      "Fanny Ghassani",
+      "Ibnu Jamil",
+      "Dinda Hauw"
+    ],
+    "rating": "13+",
+    "durationMinutes": 105,
+    "synopsis": "Kisah cinta dua insan yang terpisah oleh takdir namun tetap terhubung oleh kenangan dan rindu."
+  },
+  {
+    "id": "film-id-039",
+    "title": "Tumbal Proyek",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "gelap"
+    ],
+    "director": "Jeropoint",
+    "actors": [
+      "Karina Suwandi",
+      "Kiesha Alvaro",
+      "Callista Arum",
+      "Adi Sudirja",
+      "Fuad Idris"
+    ],
+    "rating": "17+",
+    "durationMinutes": 100,
+    "synopsis": "Teror mistis yang menghantui sebuah proyek konstruksi setelah ditemukan ritual tumbal di lokasi pembangunan."
+  },
+  {
+    "id": "film-id-040",
+    "title": "Yang Lain Boleh Hilang Asal Kau Jangan",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama",
+      "Romansa"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "sedih",
+      "romansa"
+    ],
+    "director": "Kuntz Agus",
+    "actors": [
+      "Lulu Tobing",
+      "Ibnu Jamil",
+      "Yasmin Napper",
+      "Shofia Shireen",
+      "Irgi Fahrezi"
+    ],
+    "rating": "13+",
+    "durationMinutes": 105,
+    "synopsis": "Kisah cinta yang bertahan di tengah kehilangan dan perpisahan yang tak terelakkan."
+  },
+  {
+    "id": "film-id-041",
+    "title": "Semua Akan Baik-Baik Saja",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "hangat",
+      "inspiratif",
+      "mengharukan"
+    ],
+    "director": "Baim Wong",
+    "actors": [
+      "Reza Rahadian",
+      "Ari Irham",
+      "Teuku Rifnu Wikana",
+      "Christine Hakim",
+      "Happy Salma"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Kisah optimisme seorang perempuan muda yang terus percaya bahwa semua masalah akan terlewati."
+  },
+  {
+    "id": "film-id-042",
+    "title": "Sekawan Limo 2: Gunung Klawih",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Komedi",
+      "Horor"
+    ],
+    "moodTags": [
+      "lucu",
+      "seru",
+      "ringan"
+    ],
+    "director": "Bayu Skak",
+    "actors": [
+      "Bayu Skak",
+      "Nadya Arina",
+      "Benidictus Siregar",
+      "Joshua Suherman",
+      "Brandon Salim"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Lima sekawan kembali beraksi, kali ini menghadapi teror misterius di Gunung Klawih."
+  },
+  {
+    "id": "film-id-043",
+    "title": "Badut Gendong",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "creepy",
+      "menegangkan"
+    ],
+    "director": "Charles Gozali",
+    "actors": [
+      "Marthino Lio",
+      "Clara Bernadeth",
+      "Derby Romero",
+      "Barry Prima",
+      "Khiva Iskak"
+    ],
+    "rating": "17+",
+    "durationMinutes": 95,
+    "synopsis": "Teror horor yang dimulai ketika seorang badut misterius mulai menghantui sebuah keluarga."
+  },
+  {
+    "id": "film-id-044",
+    "title": "Children of Heaven",
+    "releaseYear": 2026,
+    "releaseStatus": "released",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "keluarga",
+      "inspiratif"
+    ],
+    "director": "Hanung Bramantyo",
+    "actors": [
+      "Jared Ali",
+      "Humaira Jahra",
+      "Andri Mashadi",
+      "Faradina Mufti",
+      "Dodit Mulyanto"
+    ],
+    "rating": "SU",
+    "durationMinutes": 100,
+    "synopsis": "Kisah persaudaraan dua anak yang berjuang bersama demi satu pasang sepatu untuk sekolah."
+  },
+  {
+    "id": "film-id-045",
+    "title": "Monster Pabrik Rambut",
+    "releaseYear": 2026,
+    "releaseStatus": "scheduled",
+    "genres": [
+      "Horor"
+    ],
+    "moodTags": [
+      "seram",
+      "mistis",
+      "gelap"
+    ],
+    "director": "Edwin",
+    "actors": [
+      "Rachel Amanda",
+      "Lutesha",
+      "Iqbaal Ramadhan",
+      "Didik Nini Thowok",
+      "Sal Priadi"
+    ],
+    "rating": "17+",
+    "durationMinutes": 95,
+    "synopsis": "Teror supranatural yang menghantui para pekerja di sebuah pabrik rambut ilegal."
+  },
+  {
+    "id": "film-id-046",
+    "title": "Warkop DKI Viralin Doooong..!!",
+    "releaseYear": 2026,
+    "releaseStatus": "scheduled",
+    "genres": [
+      "Komedi"
+    ],
+    "moodTags": [
+      "lucu",
+      "nostalgia",
+      "menghibur"
+    ],
+    "director": "Herwin Novianto",
+    "actors": [
+      "Tora Sudiro",
+      "Vino G. Bastian",
+      "Deddy Mahendra Desta",
+      "Indro",
+      "Marsha Timothy"
+    ],
+    "rating": "13+",
+    "durationMinutes": 95,
+    "synopsis": "Petualangan kocak gaya Warkop DKI yang kini masuk era viral media sosial."
+  },
+  {
+    "id": "film-id-047",
+    "title": "Garuda di Dadaku",
+    "releaseYear": 2026,
+    "releaseStatus": "scheduled",
+    "genres": [
+      "Animasi",
+      "Drama",
+      "Olahraga"
+    ],
+    "moodTags": [
+      "semangat",
+      "inspiratif",
+      "patriotik"
+    ],
+    "director": "Ronny Gani",
+    "actors": [
+      "Keanu Azka",
+      "Kristo Immanuel",
+      "Ringgo Agus Rahman",
+      "Revalina S. Temat",
+      "Zee Asadel"
+    ],
+    "rating": "SU",
+    "durationMinutes": 90,
+    "synopsis": "Film animasi tentang perjuangan tim sepak bola muda Indonesia untuk meraih mimpi di pentas dunia."
+  },
+  {
+    "id": "film-id-048",
+    "title": "Jangan Buang Ibu",
+    "releaseYear": 2026,
+    "releaseStatus": "scheduled",
+    "genres": [
+      "Drama"
+    ],
+    "moodTags": [
+      "mengharukan",
+      "keluarga",
+      "sedih"
+    ],
+    "director": "Hadrah Daeng Ratu",
+    "actors": [
+      "Amanda Manopo",
+      "Dwi Sasono",
+      "Nirina Zubir",
+      "Refal Hady",
+      "Nunung"
+    ],
+    "rating": "13+",
+    "durationMinutes": 100,
+    "synopsis": "Drama keluarga tentang seorang ibu tua yang diabaikan anak-anaknya dan perjuangannya untuk tetap dicintai."
+  },
+  {
+    "id": "film-id-049",
+    "title": "Tanah Runtuh",
+    "releaseYear": 2026,
+    "releaseStatus": "scheduled",
+    "genres": [
+      "Drama",
+      "Thriller"
+    ],
+    "moodTags": [
+      "tegang",
+      "menegangkan",
+      "suram"
+    ],
+    "director": "Rudi Soedjarwo",
+    "actors": [
+      "Vino G. Bastian",
+      "Sigi Wimala",
+      "Tubagus Ali",
+      "Jenda Munthe"
+    ],
+    "rating": "17+",
+    "durationMinutes": 105,
+    "synopsis": "Kisah survival sebuah komunitas yang terjebak setelah bencana tanah longsor besar melanda daerah mereka."
+  },
+  {
+    "id": "film-id-050",
+    "title": "Dukun Magang",
+    "releaseYear": 2026,
+    "releaseStatus": "scheduled",
+    "genres": [
+      "Komedi",
+      "Horor"
+    ],
+    "moodTags": [
+      "lucu",
+      "absurd",
+      "ringan"
+    ],
+    "director": "Chiska Doppert",
+    "actors": [
+      "Dodit Mulyanto",
+      "Fajar Nugra",
+      "Jefan Nathanio",
+      "Hana Saraswati",
+      "Adi Sudirja"
+    ],
+    "rating": "13+",
+    "durationMinutes": 95,
+    "synopsis": "Komedi horor tentang seorang pemuda yang tidak sengaja menjadi murid magang seorang dukun terkenal."
+  }
+]

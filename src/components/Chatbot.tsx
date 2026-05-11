@@ -65,8 +65,13 @@ type MarkdownBlock =
       lines: string[];
     }
   | {
-      type: "unordered-list" | "ordered-list";
+      type: "unordered-list";
       items: string[];
+    }
+  | {
+      type: "ordered-list";
+      items: string[];
+      start: number;
     }
   | {
       type: "table";
@@ -106,33 +111,50 @@ const compoundWebSearchUnavailableMessage =
   "Compound web search is currently unavailable in this browser demo. Use GPT OSS 120B.";
 const fileUploadUnsupportedMessage =
   "File upload is not supported by the current models";
-const isChefBotMode = chatbotConfig.botName === "ChefBot";
-const chefBotWebSearchWarningMessage = "ChefBot tidak membutuhkan Web Search.";
+const isMovieBotMode = chatbotConfig.botName === "MovieBot";
+const movieBotWebSearchWarningMessage =
+  "MovieBot memakai katalog lokal film Indonesia 2026.";
 
 const suggestedPrompts: SuggestedPrompt[] = [
   {
-    title: "Rekomendasi hemat",
-    description: "Menu kenyang di bawah Rp 50.000",
-    prompt:
-      "Saya punya budget Rp 50.000 dan ingin makan kenyang. Rekomendasikan menu terbaik.",
+    title: "Film horor Indonesia 2026",
+    description: "Pilihan seram dari katalog",
+    prompt: "Rekomendasikan film horor Indonesia 2026 tanpa spoiler.",
   },
   {
-    title: "Tidak terlalu pedas",
-    description: "Pilihan aman dan tetap enak",
-    prompt:
-      "Saya ingin makanan yang tidak terlalu pedas. Ada rekomendasi dari menu restoran?",
+    title: "Film komedi Indonesia 2026",
+    description: "Mood ringan dan lucu",
+    prompt: "Rekomendasikan film komedi Indonesia 2026 yang ringan.",
   },
   {
-    title: "Minuman segar",
-    description: "Cocok untuk cuaca panas",
-    prompt:
-      "Rekomendasikan minuman segar dari daftar menu, lengkap dengan harga.",
+    title: "Film drama keluarga 2026",
+    description: "Hangat dan mengharukan",
+    prompt: "Rekomendasikan film drama keluarga Indonesia 2026.",
   },
   {
-    title: "Paket makan manis",
-    description: "Makanan utama, minuman, dessert",
-    prompt:
-      "Buatkan rekomendasi paket makan dengan dessert untuk orang yang suka rasa manis.",
+    title: "Film sedih Indonesia 2026",
+    description: "Cerita emosional",
+    prompt: "Rekomendasikan film sedih Indonesia 2026 dari katalog.",
+  },
+  {
+    title: "Tonton bareng keluarga",
+    description: "Aman untuk suasana rumah",
+    prompt: "Film Indonesia 2026 apa yang cocok ditonton bareng keluarga?",
+  },
+  {
+    title: "Film thriller Indonesia 2026",
+    description: "Tegang dan misterius",
+    prompt: "Rekomendasikan film thriller Indonesia 2026 tanpa spoiler.",
+  },
+  {
+    title: "Tanpa spoiler",
+    description: "Rekomendasi cepat",
+    prompt: "Rekomendasikan film Indonesia 2026 tanpa spoiler.",
+  },
+  {
+    title: "Mood ringan",
+    description: "Santai dan menghibur",
+    prompt: "Rekomendasikan film Indonesia 2026 dengan mood ringan.",
   },
 ];
 
@@ -386,7 +408,7 @@ function isCompoundModel(modelId: string) {
 }
 
 function shouldEnableWebSearchByDefault(modelId: string) {
-  return !isChefBotMode && supportsWebSearch(modelId);
+  return !isMovieBotMode && supportsWebSearch(modelId);
 }
 
 function getModelCapabilityTags(model: ChatModelOption) {
@@ -487,79 +509,14 @@ function isTableStart(lines: string[], index: number) {
   );
 }
 
-function splitOutsideInlineCodePipes(line: string) {
-  const segments: string[] = [];
-  const pipes: Array<{ before?: string; after?: string }> = [];
-  let segment = "";
-  let codeFenceLength = 0;
-  let index = 0;
-
-  while (index < line.length) {
-    if (line[index] === "`") {
-      let runLength = 1;
-
-      while (line[index + runLength] === "`") {
-        runLength += 1;
-      }
-
-      if (codeFenceLength === 0) {
-        codeFenceLength = runLength;
-      } else if (codeFenceLength === runLength) {
-        codeFenceLength = 0;
-      }
-
-      segment += line.slice(index, index + runLength);
-      index += runLength;
-      continue;
-    }
-
-    if (line[index] === "|" && codeFenceLength === 0) {
-      segments.push(segment);
-      pipes.push({
-        before: index > 0 ? line[index - 1] : undefined,
-        after: index + 1 < line.length ? line[index + 1] : undefined,
-      });
-      segment = "";
-      index += 1;
-      continue;
-    }
-
-    segment += line[index];
-    index += 1;
-  }
-
-  segments.push(segment);
-
-  return { pipes, segments };
-}
-
-function isSeparatorPipe({
-  after,
-  before,
-}: {
-  before?: string;
-  after?: string;
-}) {
-  return (
-    before === undefined ||
-    after === undefined ||
-    /\s/.test(before) ||
-    /\s/.test(after)
-  );
-}
-
 function cleanPipeSeparatedTextLine(line: string) {
-  const { pipes, segments } = splitOutsideInlineCodePipes(line);
-
-  if (pipes.length === 0 || !pipes.some(isSeparatorPipe)) {
-    return line;
+  if (/^\s*\|\s*$/.test(line)) {
+    return "";
   }
 
-  const cleanedSegments = segments
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-
-  return cleanedSegments.join("\n");
+  return line
+    .replace(/^(\s*)\|\s*/, "$1")
+    .replace(/[ \t]*\|\s*$/, "");
 }
 
 function getUnorderedListItem(line: string) {
@@ -567,7 +524,33 @@ function getUnorderedListItem(line: string) {
 }
 
 function getOrderedListItem(line: string) {
-  return line.match(/^\s*\d+[.)]\s+(.+)$/)?.[1];
+  const match = line.match(/^\s*(\d+)[.)]\s+(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    number: Number(match[1]),
+    text: match[2],
+  };
+}
+
+function getListContinuationLine(line: string) {
+  if (
+    isBlankMarkdownLine(line) ||
+    getHeadingLine(line) ||
+    getUnorderedListItem(line) ||
+    getOrderedListItem(line)
+  ) {
+    return null;
+  }
+
+  if (/^\s{2,}\S/.test(line) || /^\s*Alasan\s*:/i.test(line)) {
+    return line.trim();
+  }
+
+  return null;
 }
 
 function getHeadingLine(line: string) {
@@ -748,8 +731,21 @@ function parseAssistantMarkdown(content: string) {
           break;
         }
 
-        items.push(item);
         index += 1;
+        const itemLines = [item];
+
+        while (index < lines.length && !isTableStart(lines, index)) {
+          const continuationLine = getListContinuationLine(lines[index]);
+
+          if (continuationLine === null) {
+            break;
+          }
+
+          itemLines.push(continuationLine);
+          index += 1;
+        }
+
+        items.push(itemLines.join("\n"));
       }
 
       blocks.push({
@@ -763,6 +759,7 @@ function parseAssistantMarkdown(content: string) {
 
     if (orderedItem) {
       const items: string[] = [];
+      const start = orderedItem.number;
 
       while (index < lines.length) {
         const item = getOrderedListItem(lines[index]);
@@ -771,13 +768,27 @@ function parseAssistantMarkdown(content: string) {
           break;
         }
 
-        items.push(item);
         index += 1;
+        const itemLines = [item.text];
+
+        while (index < lines.length && !isTableStart(lines, index)) {
+          const continuationLine = getListContinuationLine(lines[index]);
+
+          if (continuationLine === null) {
+            break;
+          }
+
+          itemLines.push(continuationLine);
+          index += 1;
+        }
+
+        items.push(itemLines.join("\n"));
       }
 
       blocks.push({
         type: "ordered-list",
         items,
+        start,
       });
       continue;
     }
@@ -907,14 +918,11 @@ function cleanAssistantDisplayContent(content: string) {
     .replace(/<\/p\s*>/gi, "\n\n")
     .replace(/<p\s*>/gi, "")
     .replace(/【[^】]*†[^】]*】/g, "")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n[ \t]+/g, "\n");
+    .replace(/[ \t]+\n/g, "\n");
 
   return removeMarkdownHorizontalRules(removeStrayPipeCharacters(normalizedContent))
-    .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n[ \t]+/g, "\n")
     .trim();
 }
 
@@ -1080,7 +1088,10 @@ function AssistantMarkdown({ content }: { content: string }) {
             <ul key={`unordered-list-${blockIndex}`}>
               {block.items.map((item, itemIndex) => (
                 <li key={`${blockIndex}-${itemIndex}`}>
-                  {renderInlineMarkdown(item, `${blockIndex}-${itemIndex}`)}
+                  {renderMarkdownLines(
+                    item.split("\n"),
+                    `${blockIndex}-${itemIndex}`,
+                  )}
                 </li>
               ))}
             </ul>
@@ -1089,10 +1100,13 @@ function AssistantMarkdown({ content }: { content: string }) {
 
         if (block.type === "ordered-list") {
           return (
-            <ol key={`ordered-list-${blockIndex}`}>
+            <ol key={`ordered-list-${blockIndex}`} start={block.start}>
               {block.items.map((item, itemIndex) => (
                 <li key={`${blockIndex}-${itemIndex}`}>
-                  {renderInlineMarkdown(item, `${blockIndex}-${itemIndex}`)}
+                  {renderMarkdownLines(
+                    item.split("\n"),
+                    `${blockIndex}-${itemIndex}`,
+                  )}
                 </li>
               ))}
             </ol>
@@ -1447,7 +1461,7 @@ function Chatbot() {
   const selectedModel = getSelectedModel(currentModelId);
   const selectedModelCapabilityTags = getModelCapabilityTags(selectedModel);
   const canUseImageInput = supportsVision(currentModelId);
-  const canUseWebSearch = supportsWebSearch(currentModelId);
+  const canUseWebSearch = supportsWebSearch(currentModelId) && !isMovieBotMode;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -2096,6 +2110,15 @@ function Chatbot() {
       };
     }
 
+    if (action === "web" && isMovieBotMode) {
+      return {
+        disabled: true,
+        title: movieBotWebSearchWarningMessage,
+        active: false,
+        subtitle: movieBotWebSearchWarningMessage,
+      };
+    }
+
     if (action === "web" && !canUseWebSearch) {
       return {
         disabled: true,
@@ -2109,13 +2132,11 @@ function Chatbot() {
     if (action === "web") {
       return {
         disabled: false,
-        title: isChefBotMode
-          ? chefBotWebSearchWarningMessage
-          : isWebSearchMode
-            ? "Web search is active"
-            : "Turn on web search mode",
+        title: isWebSearchMode
+          ? "Web search is active"
+          : "Turn on web search mode",
         active: isWebSearchMode,
-        subtitle: isChefBotMode ? chefBotWebSearchWarningMessage : undefined,
+        subtitle: undefined,
       };
     }
 
@@ -2264,15 +2285,11 @@ function Chatbot() {
       <aside className={`chatbot-sidebar ${isSidebarOpen ? "is-open" : ""}`}>
         <div className="sidebar-brand">
           <div className="brand-mark" aria-hidden="true">
-            <img
-              src="/img/logo.png"
-              alt="ChefBot Logo"
-              className="chefbot-logo"
-            />
+            <img className="moviebot-logo" src="/img/logo.png" alt="MovieBot" />
           </div>
           <div>
-            <p className="brand-name">ChefBot AI</p>
-            <p className="brand-subtitle">1204230031 (IS-06-03)</p>
+            <p className="brand-name">MovieBot AI</p>
+            <p className="brand-subtitle">Kelompok 4 (IS-06-03)</p>
           </div>
           {isSidebarOpen && (
             <button
@@ -2540,9 +2557,9 @@ function Chatbot() {
               <div className="welcome-heading">
                 <div className="welcome-icon" aria-hidden="true">
                   <img
+                    className="moviebot-logo-large"
                     src="/img/logo.png"
-                    alt="ChefBot Logo"
-                    className="chefbot-logo-large"
+                    alt="MovieBot"
                   />
                 </div>
                 <h2>Welcome to {chatbotConfig.botName}</h2>
@@ -2841,12 +2858,12 @@ function Chatbot() {
               {compoundWebSearchUnavailableMessage}
             </div>
           )}
-          {isChefBotMode && isWebSearchMode && (
+          {isMovieBotMode && isWebSearchMode && (
             <div className="composer-model-note" role="status">
               <span className="material-symbols-outlined" aria-hidden="true">
                 info
               </span>
-              {chefBotWebSearchWarningMessage}
+              {movieBotWebSearchWarningMessage}
             </div>
           )}
           {(selectedAttachment || isWebSearchMode) && (

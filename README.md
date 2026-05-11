@@ -1,10 +1,22 @@
-# Chatbot Groq - ChefBot Practicum
+# MovieBot Groq
 
-Project React TypeScript untuk praktikum Custom AI Chatbot menggunakan Groq AI. Aplikasi ini mempertahankan fitur lanjutan dari project saat ini, seperti multi-turn chat, localStorage history, rename/delete history, markdown rendering, tabel, source UI, image upload, web search mode, model selector, edit, regenerate, dan copy response.
+React TypeScript chatbot demo using Groq Chat Completions API. The active persona is **MovieBot**, an Indonesian 2026 movie recommendation assistant.
 
 ## Project Overview
 
-Default persona praktikum adalah **ChefBot**, asisten rekomendasi menu restoran. ChefBot menggunakan System Instruction dari `src/config/chatbotConfig.ts` agar jawaban tetap fokus pada makanan, minuman, dessert, dan rekomendasi menu restoran.
+MovieBot only discusses Indonesian films listed in `src/data/film_indonesia_2026.json`. It rejects foreign movies, movies outside 2026, movies not present in the local catalog, and non-movie topics.
+
+The app keeps the existing chat features: multi-turn chat, localStorage history, rename/delete history, markdown rendering, tables, source UI, image upload, web search controls for non-MovieBot modes, model selector, edit, regenerate, and copy response.
+
+## Catalog
+
+The local catalog file is:
+
+```text
+src/data/film_indonesia_2026.json
+```
+
+Each movie record contains title, 2026 release year, release status, genres, mood tags, director, actors, rating, duration, and synopsis. MovieBot uses only this catalog and must not invent movie metadata.
 
 ## Tech Stack
 
@@ -12,46 +24,39 @@ Default persona praktikum adalah **ChefBot**, asisten rekomendasi menu restoran.
 - TypeScript
 - Vite
 - Groq Chat Completions API
-- Browser `localStorage` untuk history chat
+- Browser `localStorage` for MovieBot chat history
 
 ## Setup
 
-1. Install dependency:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Buat file `.env` di root project:
+2. Create `.env` in the project root:
 
 ```bash
 VITE_GROQ_API_KEY=paste_your_groq_api_key_here
 ```
 
-3. Jalankan development server:
+3. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-4. Buka URL yang ditampilkan Vite di terminal.
+4. Open the URL printed by Vite.
 
-File `.env` sudah masuk `.gitignore`, jadi API key lokal tidak ikut ter-commit.
+The `.env` file is ignored by git so local API keys are not committed.
 
 ## Health Check
 
-Untuk mengecek `.env`, koneksi ke Groq, dan model chat aktif:
+To check `.env`, Groq reachability, and active chat models:
 
 ```bash
 npm run health:check
 ```
-
-Health check menggunakan model aktif non-deprecated:
-
-- `llama-3.3-70b-versatile`
-- `llama-3.1-8b-instant`
-- `meta-llama/llama-4-scout-17b-16e-instruct`
-- `openai/gpt-oss-120b`
 
 ## Build
 
@@ -59,36 +64,32 @@ Health check menggunakan model aktif non-deprecated:
 npm run build
 ```
 
-## ChefBot/System Instruction
+## MovieBot Rules
 
-Konfigurasi utama berada di `src/config/chatbotConfig.ts`:
+Main configuration lives in `src/config/chatbotConfig.ts`:
 
-- `botName`: `ChefBot`
-- `welcomeMessage`: sapaan ramah dalam bahasa Indonesia
-- `systemInstruction`: aturan persona, batasan topik, gaya komunikasi, dan daftar menu restoran beserta harga
+- `botName`: `MovieBot`
+- `welcomeMessage`: Indonesian 2026 movie assistant greeting
+- `systemInstruction`: persona, catalog-only scope, spoiler policy, response format, and compact catalog text built from `film_indonesia_2026.json`
 
-Setiap request chat normal mengirim System Instruction sebagai pesan pertama:
+Every normal chat request sends the system instruction first:
 
 ```ts
 { role: "system", content: chatbotConfig.systemInstruction }
 ```
 
-Pesan system ini dikirim sebelum conversation history dan pesan user terbaru, sehingga multi-turn conversation tetap berjalan tetapi perilaku ChefBot tetap konsisten.
-
-## Model Metadata
-
-Model ID utama dipusatkan di `src/config/groqModels.ts` agar selector, history label, capability check, dan library tidak memakai referensi model yang berbeda-beda. Referensi model deprecated dari modul lama sudah dibersihkan dari selector dan metadata library.
+`src/services/groqService.ts` also adds lightweight guardrails for prompt injection, foreign movie requests, non-2026 requests, unknown titles, spoiler-light defaults, and genre/mood filtering hints.
 
 ## Vercel Deployment Note
 
-Jika deploy ke Vercel, tambahkan environment variable berikut di Project Settings:
+If deploying to Vercel, add this environment variable in Project Settings:
 
 ```bash
 VITE_GROQ_API_KEY=your_groq_api_key
 ```
 
-Setelah env var ditambahkan, redeploy project agar nilai tersebut masuk ke build Vite.
+Redeploy after adding the variable so it is included in the Vite build.
 
 ## Security Note
 
-Project ini memakai `VITE_GROQ_API_KEY` langsung di client karena cocok untuk demo lokal/praktikum. Ini **tidak aman untuk production**, karena Vite akan mengekspos nilai env client-side ke browser bundle. Untuk production, pindahkan request Groq ke backend/API route agar API key tetap rahasia.
+This demo uses `VITE_GROQ_API_KEY` directly in the browser, which is suitable only for local/practicum use. For production, move Groq requests to a backend/API route so the API key stays private.

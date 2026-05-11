@@ -1,6 +1,9 @@
 import { DEFAULT_GROQ_MODEL_ID } from "../config/groqModels";
 import type { ChatMessage } from "../types/chat";
 
+const CHAT_STORAGE_PREFIX = "moviebot_2026_chat_";
+const CHAT_HISTORY_EXPORT_VERSION = 2;
+
 export type SavedChatSession = {
   chatId: string;
   chatTitle: string;
@@ -65,7 +68,7 @@ export function resetChatUrl() {
 }
 
 export function getChatStorageKey(chatId: string) {
-  return `takon_chat_${chatId}`;
+  return `${CHAT_STORAGE_PREFIX}${chatId}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -227,11 +230,11 @@ export function getAllSavedChatSessions() {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
 
-      if (!key?.startsWith("takon_chat_")) {
+      if (!key?.startsWith(CHAT_STORAGE_PREFIX)) {
         continue;
       }
 
-      const chatId = key.replace("takon_chat_", "");
+      const chatId = key.replace(CHAT_STORAGE_PREFIX, "");
       const savedSession = readSavedChatSession(chatId);
 
       if (savedSession) {
@@ -250,7 +253,7 @@ export function getAllSavedChatSessions() {
 
 export function createChatHistoryExport(): ChatHistoryExport {
   return {
-    version: 1,
+    version: CHAT_HISTORY_EXPORT_VERSION,
     exportedAt: new Date().toISOString(),
     sessions: getAllSavedChatSessions(),
   };
