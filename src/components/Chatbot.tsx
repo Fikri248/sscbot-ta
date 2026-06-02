@@ -4,7 +4,6 @@ import DeleteChatModal from "./DeleteChatModal";
 import DynamicIslandToast from "./DynamicIslandToast";
 import HistoryChat from "./HistoryChat";
 import Library from "./Library";
-import { GraduationCap } from "lucide-react";
 import chatbotConfig from "../config/chatbotConfig";
 import {
   CHAT_MODEL_OPTIONS,
@@ -94,6 +93,10 @@ type ChatSessionSnapshotInput = {
   hasCustomTitle: boolean;
   messages: ChatMessage[];
   model?: string;
+};
+
+type ChatbotProps = {
+  onLogout?: () => void;
 };
 
 const imageMimeTypes: ChatImageAttachment["mimeType"][] = [
@@ -1364,7 +1367,7 @@ function getAppRoute(): AppRoute {
   return "chat";
 }
 
-function Chatbot() {
+function Chatbot({ onLogout }: ChatbotProps) {
   const [initialRoute] = useState<AppRoute>(() => getAppRoute());
   const [route, setRoute] = useState<AppRoute>(() => initialRoute);
   const [initialUrlChatId] = useState(() =>
@@ -2285,11 +2288,13 @@ function Chatbot() {
 
       <aside className={`chatbot-sidebar ${isSidebarOpen ? "is-open" : ""}`}>
         <div className="sidebar-brand">
-          <div className="flex items-center gap-2 mb-4 px-2">
-            <GraduationCap size={32} className="text-primary" />
-          </div>
+          <img
+            src="/img/logo.png"
+            alt="SSC ChatBot logo"
+            className="moviebot-logo"
+          />
           <div>
-            <p className="brand-name">SSC Dashboard</p>
+            <p className="brand-name">SSC ChatBot</p>
             <p className="brand-subtitle">Kelompok 4 (IS-06-03)</p>
           </div>
           {isSidebarOpen && (
@@ -2395,7 +2400,11 @@ function Chatbot() {
 
               <div className="profile-menu-divider" />
 
-              <button type="button" className="profile-menu-item danger">
+              <button
+                type="button"
+                className="profile-menu-item danger"
+                onClick={onLogout}
+              >
                 <span className="material-symbols-outlined" aria-hidden="true">
                   logout
                 </span>
@@ -2556,9 +2565,11 @@ function Chatbot() {
               </button>
 
               <div className="welcome-heading">
-                <div className="welcome-icon flex justify-center text-primary mb-4" aria-hidden="true">
-                  <GraduationCap size={64} />
-                </div>
+                <img
+                  src="/img/logo.png"
+                  alt="SSC ChatBot logo"
+                  className="welcome-icon moviebot-logo-large"
+                />
                 <h2>Welcome to {chatbotConfig.botName}</h2>
                 <p>{chatbotConfig.welcomeMessage}</p>
               </div>

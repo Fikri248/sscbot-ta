@@ -1,7 +1,7 @@
 import type { ChatbotConfig } from "../types/chat";
 
 const chatbotConfig: ChatbotConfig = {
-  botName: "SSC Dashboard",
+  botName: "SSC ChatBot",
   welcomeMessage:
     "Halo! Saya asisten pintar SSC (Student Service Center). " +
     "Silakan tanyakan apa saja seputar urusan akademik, administrasi kampus, " +
