@@ -4,6 +4,7 @@ import DeleteChatModal from "./DeleteChatModal";
 import DynamicIslandToast from "./DynamicIslandToast";
 import HistoryChat from "./HistoryChat";
 import Library from "./Library";
+import { GraduationCap } from "lucide-react";
 import chatbotConfig from "../config/chatbotConfig";
 import {
   CHAT_MODEL_OPTIONS,
@@ -117,44 +118,44 @@ const movieBotWebSearchWarningMessage =
 
 const suggestedPrompts: SuggestedPrompt[] = [
   {
-    title: "Film horor Indonesia 2026",
-    description: "Pilihan seram dari katalog",
-    prompt: "Rekomendasikan film horor Indonesia 2026 tanpa spoiler.",
+    title: "Cetak Transkrip",
+    description: "Cara cetak nilai",
+    prompt: "Bagaimana cara mencetak transkrip nilai akademik?",
   },
   {
-    title: "Film komedi Indonesia 2026",
-    description: "Mood ringan dan lucu",
-    prompt: "Rekomendasikan film komedi Indonesia 2026 yang ringan.",
+    title: "Pembayaran BPP",
+    description: "Jadwal dan tata cara",
+    prompt: "Kapan batas akhir pembayaran BPP semester ini dan bagaimana caranya?",
   },
   {
-    title: "Film drama keluarga 2026",
-    description: "Hangat dan mengharukan",
-    prompt: "Rekomendasikan film drama keluarga Indonesia 2026.",
+    title: "Sidang Skripsi",
+    description: "Syarat pendaftaran",
+    prompt: "Apa saja persyaratan untuk mendaftar sidang skripsi?",
   },
   {
-    title: "Film sedih Indonesia 2026",
-    description: "Cerita emosional",
-    prompt: "Rekomendasikan film sedih Indonesia 2026 dari katalog.",
+    title: "Cuti Akademik",
+    description: "Prosedur pengajuan",
+    prompt: "Bagaimana prosedur pengajuan cuti akademik?",
   },
   {
-    title: "Tonton bareng keluarga",
-    description: "Aman untuk suasana rumah",
-    prompt: "Film Indonesia 2026 apa yang cocok ditonton bareng keluarga?",
+    title: "Kartu Mahasiswa",
+    description: "KTM Hilang",
+    prompt: "Apa yang harus dilakukan jika KTM saya hilang?",
   },
   {
-    title: "Film thriller Indonesia 2026",
-    description: "Tegang dan misterius",
-    prompt: "Rekomendasikan film thriller Indonesia 2026 tanpa spoiler.",
+    title: "Jadwal Kuliah",
+    description: "Perubahan jadwal",
+    prompt: "Bagaimana cara melihat atau mengajukan perubahan jadwal kuliah?",
   },
   {
-    title: "Tanpa spoiler",
-    description: "Rekomendasi cepat",
-    prompt: "Rekomendasikan film Indonesia 2026 tanpa spoiler.",
+    title: "Sertifikat TAK",
+    description: "Input kegiatan",
+    prompt: "Bagaimana cara menginput sertifikat TAK ke sistem?",
   },
   {
-    title: "Mood ringan",
-    description: "Santai dan menghibur",
-    prompt: "Rekomendasikan film Indonesia 2026 dengan mood ringan.",
+    title: "Beasiswa",
+    description: "Informasi beasiswa",
+    prompt: "Apakah ada informasi pendaftaran beasiswa terbaru?",
   },
 ];
 
@@ -2284,11 +2285,11 @@ function Chatbot() {
 
       <aside className={`chatbot-sidebar ${isSidebarOpen ? "is-open" : ""}`}>
         <div className="sidebar-brand">
-          <div className="brand-mark" aria-hidden="true">
-            <img className="moviebot-logo" src="/img/logo.png" alt="MovieBot" />
+          <div className="flex items-center gap-2 mb-4 px-2">
+            <GraduationCap size={32} className="text-primary" />
           </div>
           <div>
-            <p className="brand-name">MovieBot AI</p>
+            <p className="brand-name">SSC Dashboard</p>
             <p className="brand-subtitle">Kelompok 4 (IS-06-03)</p>
           </div>
           {isSidebarOpen && (
@@ -2555,12 +2556,8 @@ function Chatbot() {
               </button>
 
               <div className="welcome-heading">
-                <div className="welcome-icon" aria-hidden="true">
-                  <img
-                    className="moviebot-logo-large"
-                    src="/img/logo.png"
-                    alt="MovieBot"
-                  />
+                <div className="welcome-icon flex justify-center text-primary mb-4" aria-hidden="true">
+                  <GraduationCap size={64} />
                 </div>
                 <h2>Welcome to {chatbotConfig.botName}</h2>
                 <p>{chatbotConfig.welcomeMessage}</p>
