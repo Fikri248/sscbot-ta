@@ -1,95 +1,225 @@
-# MovieBot Groq
+# SSC ChatBot
 
-React TypeScript chatbot demo using Groq Chat Completions API. The active persona is **MovieBot**, an Indonesian 2026 movie recommendation assistant.
+SSC ChatBot adalah aplikasi chatbot berbasis web yang dirancang untuk membantu mahasiswa mendapatkan informasi layanan akademik dan administrasi berdasarkan dokumen resmi yang tersedia. Sistem ini menggunakan konsep **document-based chatbot** dengan backend yang membaca dokumen, memecah isi dokumen menjadi chunk, lalu memberikan jawaban sesuai konteks dokumen.
 
 ## Project Overview
 
-MovieBot only discusses Indonesian films listed in `src/data/film_indonesia_2026.json`. It rejects foreign movies, movies outside 2026, movies not present in the local catalog, and non-movie topics.
+SSC ChatBot dibuat untuk mendukung layanan Student Service Center dengan fitur utama berupa chatbot yang dapat menjawab pertanyaan mahasiswa berdasarkan dataset dokumen akademik. Chatbot tidak menjawab pertanyaan di luar konteks dokumen yang tersedia.
 
-The app keeps the existing chat features: multi-turn chat, localStorage history, rename/delete history, markdown rendering, tables, source UI, image upload, web search controls for non-MovieBot modes, model selector, edit, regenerate, and copy response.
-
-## Catalog
-
-The local catalog file is:
+Project ini disusun dengan struktur fullstack:
 
 ```text
-src/data/film_indonesia_2026.json
+ssc-bot/
+├── frontend/
+├── backend/
+├── dataset/
+├── package.json
+├── .gitignore
+└── README.md
 ```
 
-Each movie record contains title, 2026 release year, release status, genres, mood tags, director, actors, rating, duration, and synopsis. MovieBot uses only this catalog and must not invent movie metadata.
+## Main Features
+
+* Login, register, dan logout admin/user.
+* Backend API untuk autentikasi menggunakan JWT.
+* Admin CRUD.
+* Import dokumen dari folder dataset.
+* Upload dokumen PDF, DOC, DOCX, XLS, dan XLSX.
+* Ekstraksi teks dari dokumen.
+* Pemecahan isi dokumen menjadi chunk.
+* Chatbot menjawab berdasarkan konteks dokumen.
+* Chatbot menolak pertanyaan di luar konteks dokumen.
+* Menampilkan sumber dokumen yang digunakan sebagai referensi jawaban.
+* Riwayat chat/session.
+
+## Dataset
+
+Dataset disimpan di folder:
+
+```text
+dataset/
+```
+
+Dataset berisi dokumen akademik dan administrasi, seperti panduan tugas akhir, panduan pendaftaran sidang, surat keterangan aktif mahasiswa, surat pengantar, persyaratan kelulusan, dan dokumen terkait layanan akademik lainnya.
+
+Backend akan membaca dokumen dari folder dataset, mengekstrak teks, lalu menyimpannya ke memory sebagai data yang digunakan chatbot.
 
 ## Tech Stack
 
-- React 19
-- TypeScript
-- Vite
-- Groq Chat Completions API
-- Browser `localStorage` for MovieBot chat history
+### Frontend
 
-## Setup
+* React
+* TypeScript
+* Vite
+* CSS
 
-1. Install dependencies:
+### Backend
+
+* Node.js
+* Express.js
+* TypeScript
+* JWT Authentication
+* Multer
+* pdf-parse
+* mammoth
+* xlsx
+* Groq API
+
+## Setup Project
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/Baihaqi2275/ssc-bot.git
+cd ssc-bot
+```
+
+### 2. Install Dependencies
+
+Install dependencies root, backend, dan frontend:
 
 ```bash
 npm install
+npm install --prefix backend
+npm install --prefix frontend
 ```
 
-2. Create `.env` in the project root:
+Atau gunakan script:
 
 ```bash
-VITE_GROQ_API_KEY=paste_your_groq_api_key_here
+npm run install:all
 ```
 
-3. Run the development server:
+## Environment Variables
+
+Buat file `.env` di folder backend:
+
+```text
+backend/.env
+```
+
+Isi file:
+
+```env
+PORT=5000
+JWT_SECRET=your_jwt_secret
+BASE_URL=http://localhost:5000
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-8b-instant
+```
+
+File `.env` tidak boleh di-push ke GitHub karena berisi data rahasia.
+
+Contoh konfigurasi tersedia di:
+
+```text
+backend/.env.example
+```
+
+## Run Project
+
+Jalankan frontend dan backend secara bersamaan dari folder root:
 
 ```bash
 npm run dev
 ```
 
-4. Open the URL printed by Vite.
+Server akan berjalan pada:
 
-The `.env` file is ignored by git so local API keys are not committed.
-
-## Health Check
-
-To check `.env`, Groq reachability, and active chat models:
-
-```bash
-npm run health:check
+```text
+Backend  : http://localhost:5000
+Frontend : http://localhost:5173
 ```
 
-## Build
+Jika port frontend 5173 sudah digunakan, Vite akan otomatis menggunakan port lain seperti 5174.
+
+## Backend API Endpoints
+
+### Auth
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
+```
+
+### Admin
+
+```text
+GET    /api/admins
+POST   /api/admins
+PUT    /api/admins/:id
+DELETE /api/admins/:id
+```
+
+### Documents
+
+```text
+POST /api/documents/import-dataset
+POST /api/documents/upload
+GET  /api/documents
+GET  /api/documents/:id
+GET  /api/documents/chunks/all
+GET  /api/documents/:id/chunks
+DELETE /api/documents/:id
+```
+
+### Chat
+
+```text
+POST /api/chat/start
+POST /api/chat/send
+GET  /api/chat/users
+GET  /api/chat/sessions/:user_id
+GET  /api/chat/messages/:session_id
+```
+
+## How SSC ChatBot Works
+
+1. Dokumen akademik dimasukkan ke folder `dataset`.
+2. Backend membaca dokumen saat server berjalan.
+3. Teks dari dokumen diekstrak sesuai format file.
+4. Teks dokumen dipotong menjadi beberapa chunk.
+5. Saat user bertanya, backend mencari chunk yang paling relevan.
+6. Jawaban dibuat berdasarkan konteks chunk tersebut.
+7. Chatbot mengirim jawaban beserta sumber dokumen.
+8. Jika pertanyaan tidak sesuai konteks dokumen, chatbot akan menolak atau menyatakan bahwa informasi tidak ditemukan.
+
+## Build Frontend
+
+Masuk ke folder frontend:
 
 ```bash
+cd frontend
 npm run build
 ```
 
-## MovieBot Rules
+## Build Backend
 
-Main configuration lives in `src/config/chatbotConfig.ts`:
-
-- `botName`: `MovieBot`
-- `welcomeMessage`: Indonesian 2026 movie assistant greeting
-- `systemInstruction`: persona, catalog-only scope, spoiler policy, response format, and compact catalog text built from `film_indonesia_2026.json`
-
-Every normal chat request sends the system instruction first:
-
-```ts
-{ role: "system", content: chatbotConfig.systemInstruction }
-```
-
-`src/services/groqService.ts` also adds lightweight guardrails for prompt injection, foreign movie requests, non-2026 requests, unknown titles, spoiler-light defaults, and genre/mood filtering hints.
-
-## Vercel Deployment Note
-
-If deploying to Vercel, add this environment variable in Project Settings:
+Masuk ke folder backend:
 
 ```bash
-VITE_GROQ_API_KEY=your_groq_api_key
+cd backend
+npm run build
 ```
-
-Redeploy after adding the variable so it is included in the Vite build.
 
 ## Security Note
 
-This demo uses `VITE_GROQ_API_KEY` directly in the browser, which is suitable only for local/practicum use. For production, move Groq requests to a backend/API route so the API key stays private.
+API key Groq dan secret JWT harus disimpan di file `.env` pada backend. Jangan menyimpan API key asli di frontend, README, `.env.example`, atau file lain yang ikut di-push ke GitHub.
+
+File yang tidak boleh di-push:
+
+```text
+.env
+backend/.env
+frontend/.env
+node_modules
+backend/node_modules
+frontend/node_modules
+backend/uploads
+```
+
+## Project Status
+
+Project ini merupakan final project pengembangan aplikasi AI berbasis chatbot untuk membantu layanan akademik Student Service Center. Backend sudah mendukung autentikasi, pengelolaan dokumen, import dataset, pencarian konteks dokumen, jawaban chatbot berbasis RAG sederhana, dan sumber dokumen.
