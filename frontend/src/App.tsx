@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Login from "./components/Login";
+import LoginAdmin from "./components/LoginAdmin";
+import LandingPage from "./components/LandingPage";
 import Register from "./components/Register";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
 import Chatbot from "./components/Chatbot";
@@ -18,7 +20,7 @@ function App() {
     localStorage.getItem("role") || "user"
   );
 
-  const [showRegister, setShowRegister] = useState(false);
+  const [authPage, setAuthPage] = useState<"landing" | "login_user" | "login_admin" | "register">("landing");
 
   const handleLogin = (name: string, userRole: string) => {
     setUsername(name);
@@ -33,17 +35,24 @@ function App() {
     setUsername("");
     setRole("user");
     setIsLogin(false);
+    setAuthPage("landing");
   };
 
-  if (!isLogin && showRegister) {
-    return <Register onShowLogin={() => setShowRegister(false)} />;
-  }
-
   if (!isLogin) {
+    if (authPage === "landing") {
+      return <LandingPage onSelect={(mode) => setAuthPage(mode === "user" ? "login_user" : "login_admin")} />;
+    }
+    if (authPage === "register") {
+      return <Register onShowLogin={() => setAuthPage("login_user")} />;
+    }
+    if (authPage === "login_admin") {
+      return <LoginAdmin onLogin={handleLogin} onBack={() => setAuthPage("landing")} />;
+    }
     return (
       <Login
         onLogin={handleLogin}
-        onShowRegister={() => setShowRegister(true)}
+        onShowRegister={() => setAuthPage("register")}
+        onBack={() => setAuthPage("landing")}
       />
     );
   }

@@ -2,33 +2,29 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 
-import { ArrowLeft } from "lucide-react";
-
-type LoginProps = {
+type LoginAdminProps = {
   onLogin: (username: string, role: string) => void;
-  onShowRegister: () => void;
   onBack: () => void;
 };
 
-function Login({ onLogin, onShowRegister, onBack }: LoginProps) {
+function LoginAdmin({ onLogin, onBack }: LoginAdminProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const savedUsername = localStorage.getItem("registeredUsername");
-    const savedPassword = localStorage.getItem("registeredPassword");
+    const isDefaultAdmin = username === "admin" && password === "admin123";
 
-    const isRegisteredUser = username === savedUsername && password === savedPassword;
-    if (isRegisteredUser) {
+    if (isDefaultAdmin) {
       localStorage.setItem("isLogin", "true");
       localStorage.setItem("username", username);
-      localStorage.setItem("role", "user");
-      onLogin(username, "user");
+      localStorage.setItem("role", "admin");
+      onLogin(username, "admin");
     } else {
-      alert("Username atau password mahasiswa salah!");
+      alert("Kredensial Admin tidak valid!");
     }
   };
 
@@ -37,24 +33,25 @@ function Login({ onLogin, onShowRegister, onBack }: LoginProps) {
       className="flex items-center justify-center min-h-screen bg-cover bg-center relative"
       style={{ backgroundImage: "url('/img/bg-login.jpg')" }}
     >
-      <div className="absolute inset-0 bg-black/30" />
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to top, hsla(359, 75%, 28%, 0.85) 0%, transparent 35%)' }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to left, hsla(359, 75%, 28%, 0.8) 0%, transparent 25%)' }} />
-      <Card className="w-full max-w-md shadow-xl border-muted relative z-10 bg-background/95 backdrop-blur-sm">
+      <div className="absolute inset-0 bg-blue-900/60 backdrop-blur-sm" />
+      <Card className="w-full max-w-md shadow-2xl border-blue-200 relative z-10 bg-background/95 backdrop-blur-sm">
         <button 
-          type="button"
           onClick={onBack}
           className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
           title="Kembali"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
+        
         <CardHeader className="space-y-1 mt-4">
-          <CardTitle className="text-2xl font-bold text-primary tracking-tight text-center mb-2">
-            Portal Mahasiswa
+          <div className="mx-auto w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-blue-700 tracking-tight text-center mb-2">
+            Portal Admin SSC
           </CardTitle>
           <CardDescription className="text-center">
-            Masukkan username dan password Anda untuk masuk
+            Login menggunakan kredensial staf administrasi SSC
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
@@ -62,36 +59,28 @@ function Login({ onLogin, onShowRegister, onBack }: LoginProps) {
             <div className="space-y-2">
               <Input
                 type="text"
-                placeholder="Username"
+                placeholder="Admin Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                className="focus-visible:ring-blue-500"
               />
             </div>
             <div className="space-y-2">
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder="Admin Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="focus-visible:ring-blue-500"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">
-              Login
+          <CardFooter>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+              Login sebagai Admin
             </Button>
-            <div className="text-sm text-center text-muted-foreground">
-              Belum punya akun?{" "}
-              <button 
-                type="button" 
-                onClick={onShowRegister}
-                className="text-primary hover:underline font-medium"
-              >
-                Register
-              </button>
-            </div>
           </CardFooter>
         </form>
       </Card>
@@ -99,4 +88,4 @@ function Login({ onLogin, onShowRegister, onBack }: LoginProps) {
   );
 }
 
-export default Login;
+export default LoginAdmin;
