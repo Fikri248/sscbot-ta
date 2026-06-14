@@ -206,9 +206,19 @@ function Chatbot({ onLogout }: ChatbotProps) {
 
   const suggestedPrompts = [
     {
-      title: "Tugas Akhir",
-      description: "Persyaratan dan prosedur TA",
-      prompt: "Bagaimana cara persiapan tugas akhir?",
+      title: "LPJ Kegiatan",
+      description: "Cara dan prosedur pengajuan",
+      prompt: "Bagaimana cara mengajukan LPJ?",
+    },
+    {
+      title: "Template Proposal",
+      description: "Link dokumen template",
+      prompt: "Di mana template proposal?",
+    },
+    {
+      title: "Kegiatan TAK",
+      description: "Prosedur dan syarat TAK",
+      prompt: "Bagaimana mengurus TAK?",
     },
     {
       title: "Sidang TA",
@@ -216,24 +226,14 @@ function Chatbot({ onLogout }: ChatbotProps) {
       prompt: "Apa saja persyaratan pendaftaran sidang tugas akhir?",
     },
     {
-      title: "SK Tugas Akhir",
-      description: "Pembaruan atau perpanjangan SK",
-      prompt: "Bagaimana cara mengurus perpanjangan SK tugas akhir?",
-    },
-    {
       title: "Surat Aktif",
       description: "Pengajuan surat aktif mahasiswa",
       prompt: "Bagaimana cara mengajukan surat keterangan aktif mahasiswa?",
     },
     {
-      title: "Surat Pengantar TOSS",
-      description: "Prosedur surat pengantar",
+      title: "Surat Pengantar",
+      description: "Prosedur surat TOSS",
       prompt: "Bagaimana cara mengajukan surat pengantar TOSS?",
-    },
-    {
-      title: "Cumlaude",
-      description: "Syarat predikat kelulusan",
-      prompt: "Apa saja syarat cumlaude dan summa cumlaude?",
     },
   ];
 

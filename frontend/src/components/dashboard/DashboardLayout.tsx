@@ -3,6 +3,7 @@ import { AppSidebar } from "./AppSidebar"
 import { DashboardHeader } from "./DashboardHeader"
 import { Overview } from "./Overview"
 import { AdminConversations } from "./AdminConversations"
+import { KnowledgeBase } from "./KnowledgeBase"
 import { Loader2 } from "lucide-react"
 
 type DashboardLayoutProps = {
@@ -26,6 +27,7 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
     switch (activeTab) {
       case "overview": return "Overview"
       case "conversations": return "Conversations"
+      case "knowledge": return "Knowledge Base"
       case "users": return "User Management"
       case "analytics": return "Analytics"
       case "models": return "AI Models"
@@ -82,6 +84,11 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
             {activeTab === "conversations" && (
               <div className="h-full bg-card rounded-xl border shadow-sm overflow-hidden flex flex-col">
                 <AdminConversations />
+              </div>
+            )}
+            {activeTab === "knowledge" && (
+              <div className="h-full">
+                <KnowledgeBase />
               </div>
             )}
             {["users", "analytics", "models", "moderation", "settings"].includes(activeTab) && (

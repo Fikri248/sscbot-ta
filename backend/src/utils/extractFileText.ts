@@ -1,6 +1,7 @@
 import { extractPdfText } from "./extractPdf";
 import { extractDocxText } from "./extractDocx";
 import { extractXlsxText } from "./extractXlsx";
+import * as fs from "fs";
 
 function normalizeSingleString(value: unknown): string {
   if (Array.isArray(value)) {
@@ -31,6 +32,10 @@ export async function extractFileText(
 
   if (mimetype === "application/pdf") {
     return extractPdfText(filePath);
+  }
+
+  if (mimetype === "text/plain" || mimetype === "text/markdown") {
+    return fs.promises.readFile(filePath, "utf-8");
   }
 
   if (

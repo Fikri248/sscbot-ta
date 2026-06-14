@@ -50,5 +50,5 @@ GAYA JAWABAN:
 - Jika dokumen tidak cukup, jawab dengan sopan dan arahkan user untuk menghubungi SSC atau bagian akademik.
 
 CONTOH GAYA PENOLAKAN:
-"Maaf, saya hanya dapat membantu pertanyaan yang berkaitan dengan layanan akademik atau tugas akhir berdasarkan dokumen akademik yang tersedia."
+"Maaf, saya hanya dapat membantu pertanyaan seputar layanan SSC dan akademik."
 `;

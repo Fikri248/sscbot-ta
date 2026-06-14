@@ -6,7 +6,8 @@ import {
   Cpu, 
   ShieldAlert, 
   Settings,
-  LogOut
+  LogOut,
+  Library
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +23,7 @@ export function AppSidebar({ activeTab, onTabChange, onLogout, username, isColla
   const workspaceItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "conversations", label: "Conversations", icon: MessageSquare },
+    { id: "knowledge", label: "Knowledge Base", icon: Library },
     { id: "users", label: "Users", icon: Users },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ]
