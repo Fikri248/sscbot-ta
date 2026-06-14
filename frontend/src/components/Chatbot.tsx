@@ -4,6 +4,7 @@ import {
   startChat as startBackendChat,
   sendChatMessage as sendBackendChatMessage,
 } from "../services/sscApi";
+import { Loader2 } from "lucide-react";
 
 type ChatbotProps = {
   onLogout?: () => void;
@@ -546,8 +547,9 @@ function Chatbot({ onLogout }: ChatbotProps) {
               {isLoading && (
                 <article className="message-row assistant">
                   <div className="message-stack">
-                    <div className="message-bubble">
-                      <p>Sedang mencari jawaban dari dokumen...</p>
+                    <div className="message-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <p>Sedang memproses...</p>
                     </div>
                   </div>
                 </article>

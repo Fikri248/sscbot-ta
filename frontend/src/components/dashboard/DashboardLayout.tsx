@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AppSidebar } from "./AppSidebar"
 import { DashboardHeader } from "./DashboardHeader"
 import { Overview } from "./Overview"
 import { AdminConversations } from "./AdminConversations"
+import { Loader2 } from "lucide-react"
 
 type DashboardLayoutProps = {
   username: string;
@@ -12,6 +13,14 @@ type DashboardLayoutProps = {
 export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsBuffering(false)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [])
 
   const getPageTitle = () => {
     switch (activeTab) {
@@ -24,6 +33,17 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
       case "settings": return "Settings"
       default: return "Dashboard"
     }
+  }
+
+  if (isBuffering) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground animate-pulse">Memuat Layanan SSC...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
