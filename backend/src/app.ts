@@ -1,36 +1,40 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+
+import chatRoutes from "./routes/chat.routes";
+import documentRoutes from "./routes/document.routes";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
-import documentRoutes from "./routes/document.routes";
-import chatRoutes from "./routes/chat.routes";
+import userRoutes from "./routes/user.routes";
+
+import supportRoutes from "./routes/support.routes";
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin: "*",
+    credentials: true,
+  })
+);
 
-const datasetPath = path.join(process.cwd(), "../dataset");
-const uploadsPath = path.join(process.cwd(), "uploads");
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/files/dataset", express.static(datasetPath));
-app.use("/files/uploads", express.static(uploadsPath));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-app.get("/", (req, res) => {
-  res.send("Backend SSC Chatbot berjalan");
-});
-
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "success",
-    message: "API backend aktif",
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "TA Assistant Backend is running.",
   });
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/admins", adminRoutes);
-app.use("/api/documents", documentRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
-
+app.use("/api/documents", documentRoutes);
+app.use("/api/support", supportRoutes);
 export default app;

@@ -1,26 +1,52 @@
-import path from "path";
-import { extractPdf } from "./extractPdf";
-import { extractDocx } from "./extractDocx";
-import { extractXlsx } from "./extractXlsx";
+import { extractPdfText } from "./extractPdf";
+import { extractDocxText } from "./extractDocx";
+import { extractXlsxText } from "./extractXlsx";
 
-export const extractFileText = async (filePath: string): Promise<string> => {
-  const ext = path.extname(filePath).toLowerCase();
-
-  if (ext === ".pdf") {
-    return await extractPdf(filePath);
+function normalizeSingleString(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value[0] ? String(value[0]) : "";
   }
 
-  if (ext === ".docx") {
-    return await extractDocx(filePath);
+  if (typeof value === "string") {
+    return value;
   }
 
-  if (ext === ".xlsx" || ext === ".xls") {
-    return await extractXlsx(filePath);
+  if (value === null || value === undefined) {
+    return "";
   }
 
-  if (ext === ".doc") {
-    return "File .doc belum didukung penuh. Silakan ubah ke .docx agar bisa dibaca.";
+  return String(value);
+}
+
+export async function extractFileText(
+  filePathValue: unknown,
+  mimetypeValue: unknown
+): Promise<string> {
+  const filePath = normalizeSingleString(filePathValue);
+  const mimetype = normalizeSingleString(mimetypeValue);
+
+  if (!filePath) {
+    throw new Error("Path file tidak valid.");
   }
 
-  return "";
-};
+  if (mimetype === "application/pdf") {
+    return extractPdfText(filePath);
+  }
+
+  if (
+    mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    mimetype === "application/msword"
+  ) {
+    return extractDocxText(filePath);
+  }
+
+  if (
+    mimetype ===
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  ) {
+    return extractXlsxText(filePath);
+  }
+
+  throw new Error("Format file tidak didukung. Gunakan PDF, DOC, DOCX, atau XLSX.");
+}

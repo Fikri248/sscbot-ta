@@ -1,26 +1,18 @@
 import { Router } from "express";
 import {
-  importDatasetDocuments,
-  uploadDocument,
-  getAllDocuments,
-  getDocumentById,
   deleteDocument,
-  getAllDocumentChunks,
-  getChunksByDocumentId,
+  getDocuments,
+  importDataset,
+  uploadDocument,
 } from "../controllers/document.controller";
-import { authMiddleware } from "../middlewares/auth.middleware";
 import { upload } from "../middlewares/upload.middleware";
 
 const router = Router();
 
-router.post("/import-dataset", authMiddleware, importDatasetDocuments);
-router.post("/upload", authMiddleware, upload.single("file"), uploadDocument);
-
-router.get("/chunks/all", authMiddleware, getAllDocumentChunks);
-router.get("/", authMiddleware, getAllDocuments);
-router.get("/:id/chunks", authMiddleware, getChunksByDocumentId);
-router.get("/:id", authMiddleware, getDocumentById);
-
-router.delete("/:id", authMiddleware, deleteDocument);
+router.get("/", getDocuments);
+router.get("/import-dataset", importDataset);
+router.post("/import-dataset", importDataset);
+router.post("/upload", upload.single("file"), uploadDocument);
+router.delete("/:id", deleteDocument);
 
 export default router;

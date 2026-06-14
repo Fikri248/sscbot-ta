@@ -8,36 +8,41 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+const allowedMimeTypes = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
-    const safeFileName = file.originalname.replace(/\s+/g, "-");
-    const uniqueName = Date.now() + "-" + safeFileName;
+  filename: (_req, file, cb) => {
+    const safeOriginalName = file.originalname
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9.\-_]/g, "");
+
+    const uniqueName = `${Date.now()}-${safeOriginalName}`;
     cb(null, uniqueName);
   },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
-  const allowedExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx"];
-  const ext = path.extname(file.originalname).toLowerCase();
-
-  if (allowedExtensions.includes(ext)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error(
-        "File tidak valid. Hanya PDF, DOC, DOCX, XLS, dan XLSX yang diperbolehkan."
-      )
-    );
-  }
-};
-
 export const upload = multer({
   storage,
-  fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 20 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          "Format file tidak didukung. Gunakan file PDF, DOC, DOCX, atau XLSX."
+        )
+      );
+    }
   },
 });

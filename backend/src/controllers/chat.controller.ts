@@ -1,166 +1,280 @@
 import { Request, Response } from "express";
-import { searchRelevantChunks } from "../services/rag.service";
-import { generateAnswerWithAI } from "../services/ai.service";
+import {
+  buildContextFromChunks,
+  getUniqueSources,
+  searchRelevantChunks,
+} from "../services/rag.service";
+import {
+  generateAnswerWithAI,
+  rewriteQuestionForRetrieval,
+} from "../services/ai.service";
+import { getAllDocumentChunks } from "../services/document.service";
+import { isAskingForSource } from "../utils/sourceIntent";
+import { isAskingForAdmin } from "../utils/adminIntent";
 
-const chatUsers: any[] = [];
-const chatSessions: any[] = [];
-const chatMessages: any[] = [];
-
-export const startChat = async (req: Request, res: Response) => {
-  try {
-    const { name, phone_number } = req.body || {};
-
-    if (!name || !phone_number) {
-      return res.status(400).json({
-        status: "error",
-        message: "Nama dan nomor HP wajib diisi",
-      });
-    }
-
-    let user = chatUsers.find((item) => item.phone_number === phone_number);
-
-    if (!user) {
-      user = {
-        id: Date.now().toString() + Math.random().toString(36).substring(2),
-        name,
-        phone_number,
-        created_at: new Date(),
-      };
-
-      chatUsers.push(user);
-    }
-
-    const session = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2),
-      user_id: user.id,
-      title: "Chat Baru",
-      created_at: new Date(),
-    };
-
-    chatSessions.push(session);
-
-    return res.status(201).json({
-      status: "success",
-      message: "Sesi chat berhasil dibuat",
-      data: {
-        user,
-        session,
-      },
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      status: "error",
-      message: error.message || "Gagal memulai chat",
-    });
-  }
+type ChatMessage = {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+  sources?: any[];
+  action?: string | null;
 };
 
-export const sendChatMessage = async (req: Request, res: Response) => {
-  try {
-    const { user_id, session_id, message } = req.body || {};
+type ChatSession = {
+  id: string;
+  sessionId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
-    if (!user_id || !session_id || !message) {
-      return res.status(400).json({
-        status: "error",
-        message: "user_id, session_id, dan message wajib diisi",
-      });
-    }
+const chatSessions: ChatSession[] = [];
+const chatMessages: ChatMessage[] = [];
 
-    const userMessage = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2),
-      session_id,
-      user_id,
-      sender: "user",
-      message,
-      created_at: new Date(),
-    };
+function getMessageFromBody(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
 
-    chatMessages.push(userMessage);
+  const message = (body as { message?: unknown }).message;
 
-    const relevantChunks = searchRelevantChunks(message);
+  if (typeof message !== "string") return null;
 
-    let botAnswer = "";
+  const cleanMessage = message.trim();
 
-if (relevantChunks.length === 0) {
-  botAnswer =
-    "Maaf, saya belum menemukan informasi tersebut pada dokumen akademik TUS yang tersedia. Silakan ajukan pertanyaan yang berkaitan dengan layanan akademik, tugas akhir, sidang, TOSS, SKPI, TAK, atau persyaratan kelulusan.";
-} else {
-  const contexts = relevantChunks.map((chunk) => chunk.chunk_text);
+  if (!cleanMessage) return null;
 
-  botAnswer = await generateAnswerWithAI({
-    question: message,
-    contexts,
+  return cleanMessage;
+}
+
+function getSessionIdFromBody(body: unknown): string {
+  if (!body || typeof body !== "object") return "default-session";
+
+  const sessionId = (body as { sessionId?: unknown }).sessionId;
+
+  if (typeof sessionId === "string" && sessionId.trim()) {
+    return sessionId.trim();
+  }
+
+  return "default-session";
+}
+
+function createSession(sessionId?: string): ChatSession {
+  const id = sessionId || `session-${Date.now()}`;
+
+  const existing = chatSessions.find((session) => session.sessionId === id);
+
+  if (existing) {
+    existing.updatedAt = new Date().toISOString();
+    return existing;
+  }
+
+  const newSession: ChatSession = {
+    id,
+    sessionId: id,
+    title: "Chat Tugas Akhir",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  chatSessions.push(newSession);
+
+  return newSession;
+}
+
+function saveChat(
+  sessionId: string,
+  role: "user" | "assistant",
+  content: string,
+  options?: {
+    sources?: any[];
+    action?: string | null;
+  }
+) {
+  createSession(sessionId);
+
+  chatMessages.push({
+    id: `${Date.now()}-${role}-${Math.random().toString(36).slice(2)}`,
+    sessionId,
+    role,
+    content,
+    createdAt: new Date().toISOString(),
+    sources: options?.sources || [],
+    action: options?.action || null,
   });
 }
-    const sources = relevantChunks.map((chunk) => ({
-  document_title: chunk.document_title,
-  file_name: chunk.file_name,
-  file_url: chunk.file_url,
-  chunk_index: chunk.chunk_index,
-  score: chunk.score,
-}));
 
-    const botMessage = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2),
-      session_id,
-      user_id,
-      sender: "bot",
-      message: botAnswer,
-      sources,
-      created_at: new Date(),
-    };
+export async function startChatSession(_req: Request, res: Response) {
+  const session = createSession();
 
-    chatMessages.push(botMessage);
+  return res.status(200).json({
+    success: true,
+    message: "Sesi chat berhasil dimulai.",
+    id: session.id,
+    sessionId: session.sessionId,
+    chatSessionId: session.sessionId,
+    data: {
+      id: session.id,
+      sessionId: session.sessionId,
+      chatSessionId: session.sessionId,
+    },
+    session,
+  });
+}
 
-    return res.json({
-      status: "success",
-      message: "Pesan berhasil diproses",
-      data: {
-        answer: botAnswer,
-        sources,
-      },
+export async function sendChatMessage(req: Request, res: Response) {
+  try {
+    const cleanMessage = getMessageFromBody(req.body);
+
+    if (!cleanMessage) {
+      return res.status(400).json({
+        success: false,
+        message: "Pesan tidak boleh kosong.",
+      });
+    }
+
+    const sessionId = getSessionIdFromBody(req.body);
+
+    saveChat(sessionId, "user", cleanMessage);
+
+    const wantsAdmin = await isAskingForAdmin(cleanMessage);
+
+    if (wantsAdmin) {
+      const answer =
+        "Baik, saya akan mengarahkan kamu untuk menghubungi admin secara langsung. Silakan isi data berikut terlebih dahulu: nama, NIM, prodi, dan nomor telepon.";
+
+      saveChat(sessionId, "assistant", answer, {
+        action: "collect_admin_contact",
+        sources: [],
+      });
+
+      return res.status(200).json({
+        success: true,
+        sessionId,
+        answer,
+        message: answer,
+        action: "collect_admin_contact",
+        sources: [],
+        showSources: false,
+      });
+    }
+
+    const allChunks = await getAllDocumentChunks();
+
+    if (!allChunks.length) {
+      const answer =
+        "Maaf, belum ada dokumen tugas akhir yang tersedia. Admin perlu mengunggah atau menyediakan dokumen tugas akhir terlebih dahulu agar saya dapat menjawab pertanyaan.";
+
+      saveChat(sessionId, "assistant", answer, {
+        sources: [],
+      });
+
+      return res.status(200).json({
+        success: true,
+        sessionId,
+        answer,
+        message: answer,
+        action: null,
+        sources: [],
+        showSources: false,
+      });
+    }
+
+    const wantsSource = await isAskingForSource(cleanMessage);
+
+    const retrievalQuestion = await rewriteQuestionForRetrieval(cleanMessage);
+
+    const relevantChunks = await searchRelevantChunks(
+      retrievalQuestion,
+      allChunks,
+      {
+        topK: 7,
+        minScore: 0.18,
+      }
+    );
+
+    if (!relevantChunks.length) {
+      const answer =
+        "Maaf, saya hanya dapat membantu pertanyaan yang berkaitan dengan tugas akhir berdasarkan dokumen akademik yang tersedia.";
+
+      saveChat(sessionId, "assistant", answer, {
+        sources: [],
+      });
+
+      return res.status(200).json({
+        success: true,
+        sessionId,
+        answer,
+        message: answer,
+        action: null,
+        sources: [],
+        showSources: false,
+      });
+    }
+
+    const context = buildContextFromChunks(relevantChunks);
+
+    const answer = await generateAnswerWithAI({
+      question: cleanMessage,
+      context,
     });
-  } catch (error: any) {
+
+    const sources = wantsSource ? getUniqueSources(relevantChunks) : [];
+
+    saveChat(sessionId, "assistant", answer, {
+      sources,
+    });
+
+    return res.status(200).json({
+      success: true,
+      sessionId,
+      answer,
+      message: answer,
+      action: null,
+      sources,
+      showSources: wantsSource,
+    });
+  } catch (error) {
+    console.error("Chat error:", error);
+
     return res.status(500).json({
-      status: "error",
-      message: error.message || "Gagal memproses chat",
+      success: false,
+      message: "Terjadi kesalahan pada sistem chatbot.",
     });
   }
-};
+}
 
-export const getChatSessionsByUser = async (req: Request, res: Response) => {
-  const { user_id } = req.params;
+export async function getChatHistory(req: Request, res: Response) {
+  const sessionId =
+    typeof req.query.sessionId === "string" ? req.query.sessionId : null;
 
-  const sessions = chatSessions.filter((session) => session.user_id === user_id);
+  const messages = sessionId
+    ? chatMessages.filter((message) => message.sessionId === sessionId)
+    : chatMessages;
 
-  return res.json({
-    status: "success",
-    message: "Data sesi chat berhasil diambil",
-    total: sessions.length,
-    data: sessions,
+  return res.status(200).json({
+    success: true,
+    messages,
   });
-};
+}
 
-export const getChatMessagesBySession = async (req: Request, res: Response) => {
-  const { session_id } = req.params;
+export async function clearChatHistory(req: Request, res: Response) {
+  const sessionId =
+    typeof req.query.sessionId === "string" ? req.query.sessionId : null;
 
-  const messages = chatMessages.filter(
-    (message) => message.session_id === session_id
-  );
+  if (sessionId) {
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      if (chatMessages[i].sessionId === sessionId) {
+        chatMessages.splice(i, 1);
+      }
+    }
+  } else {
+    chatMessages.length = 0;
+    chatSessions.length = 0;
+  }
 
-  return res.json({
-    status: "success",
-    message: "Data pesan chat berhasil diambil",
-    total: messages.length,
-    data: messages,
+  return res.status(200).json({
+    success: true,
+    message: "Riwayat chat berhasil dihapus.",
   });
-};
-
-export const getAllChatUsers = async (req: Request, res: Response) => {
-  return res.json({
-    status: "success",
-    message: "Data user chat berhasil diambil",
-    total: chatUsers.length,
-    data: chatUsers,
-  });
-};
+}

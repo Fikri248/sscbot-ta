@@ -1,20 +1,17 @@
 import { Router } from "express";
 import {
-  startChat,
+  clearChatHistory,
+  getChatHistory,
   sendChatMessage,
-  getChatSessionsByUser,
-  getChatMessagesBySession,
-  getAllChatUsers,
+  startChatSession,
 } from "../controllers/chat.controller";
-import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/start", startChat);
+router.get("/start", startChatSession);
+router.post("/start", startChatSession);
 router.post("/send", sendChatMessage);
-
-router.get("/users", authMiddleware, getAllChatUsers);
-router.get("/sessions/:user_id", authMiddleware, getChatSessionsByUser);
-router.get("/messages/:session_id", authMiddleware, getChatMessagesBySession);
+router.get("/history", getChatHistory);
+router.delete("/history", clearChatHistory);
 
 export default router;

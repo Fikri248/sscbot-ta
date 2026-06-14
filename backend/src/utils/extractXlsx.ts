@@ -1,24 +1,28 @@
-import XLSX from "xlsx";
+import xlsx from "xlsx";
 
-export const extractXlsx = async (filePath: string): Promise<string> => {
-  const workbook = XLSX.readFile(filePath);
+export async function extractXlsxText(filePath: string): Promise<string> {
+  const workbook = xlsx.readFile(filePath);
+  const texts: string[] = [];
 
-  let text = "";
-
-  workbook.SheetNames.forEach((sheetName) => {
+  for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
 
-    const jsonData = XLSX.utils.sheet_to_json(sheet, {
-      header: 1,
+    const rows = xlsx.utils.sheet_to_json<Record<string, unknown>>(sheet, {
       defval: "",
-    }) as any[][];
-
-    text += `\nSheet: ${sheetName}\n`;
-
-    jsonData.forEach((row) => {
-      text += row.join(" | ") + "\n";
     });
-  });
 
-  return text;
-};
+    texts.push(`Nama Sheet: ${sheetName}`);
+
+    rows.forEach((row, index) => {
+      const rowText = Object.entries(row)
+        .map(([key, value]) => `${key}: ${String(value)}`)
+        .join(" | ");
+
+      if (rowText.trim()) {
+        texts.push(`Baris ${index + 1}: ${rowText}`);
+      }
+    });
+  }
+
+  return texts.join("\n");
+}

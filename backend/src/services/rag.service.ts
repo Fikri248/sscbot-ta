@@ -1,75 +1,133 @@
-import { documentChunks } from "../controllers/document.controller";
+import { generateEmbedding } from "./embedding.service";
 
-const stopWords = [
-  "apa",
-  "yang",
-  "dan",
-  "atau",
-  "dengan",
-  "untuk",
-  "dari",
-  "pada",
-  "dalam",
-  "ke",
-  "di",
-  "itu",
-  "ini",
-  "adalah",
-  "saya",
-  "aku",
-  "kamu",
-  "bagaimana",
-  "gimana",
-  "berapa",
-  "mohon",
-  "tolong",
-  "jelaskan",
-  "tentang",
-];
-
-const normalizeText = (text: string) => {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s]/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+export type DocumentChunk = {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  documentUrl?: string;
+  text: string;
+  embedding: number[];
 };
 
-const getWords = (text: string) => {
-  return normalizeText(text)
-    .split(" ")
-    .filter((word) => word.length > 2)
-    .filter((word) => !stopWords.includes(word));
+export type SearchResult = DocumentChunk & {
+  score: number;
 };
 
-export const searchRelevantChunks = (question: string) => {
-  const questionWords = getWords(question);
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (!a.length || !b.length || a.length !== b.length) return 0;
 
-  if (questionWords.length === 0) {
-    return [];
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
   }
 
-  const scoredChunks = documentChunks.map((chunk) => {
-    const chunkText = normalizeText(chunk.chunk_text);
+  if (normA === 0 || normB === 0) return 0;
 
-    let score = 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
-    questionWords.forEach((word) => {
-      if (chunkText.includes(word)) {
-        score += 1;
-      }
-    });
+function normalizeForSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-    return {
-      ...chunk,
-      score,
-    };
-  });
+function lexicalBonus(question: string, chunkText: string): number {
+  const questionWords = normalizeForSearch(question)
+    .split(" ")
+    .filter((word) => word.length >= 3);
 
-  const relevantChunks = scoredChunks
-    .filter((chunk) => chunk.score >= 2)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+  const normalizedChunkText = normalizeForSearch(chunkText);
 
-  return relevantChunks;
-};
+  if (!questionWords.length || !normalizedChunkText) return 0;
+
+  let matchedWords = 0;
+
+  for (const word of questionWords) {
+    if (normalizedChunkText.includes(word)) {
+      matchedWords++;
+    }
+  }
+
+  return Math.min(matchedWords / questionWords.length, 1) * 0.15;
+}
+
+export async function searchRelevantChunks(
+  question: string,
+  chunks: DocumentChunk[],
+  options?: {
+    topK?: number;
+    minScore?: number;
+  }
+): Promise<SearchResult[]> {
+  const topK = options?.topK ?? 7;
+  const minScore = options?.minScore ?? 0.18;
+
+  if (!question.trim() || !chunks.length) return [];
+
+  const questionEmbedding = await generateEmbedding(question);
+
+  const scoredChunks = chunks
+    .map((chunk) => {
+      const vectorScore = cosineSimilarity(questionEmbedding, chunk.embedding);
+      const bonus = lexicalBonus(question, chunk.text);
+      const finalScore = vectorScore + bonus;
+
+      return {
+        ...chunk,
+        score: finalScore,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return scoredChunks
+    .filter((chunk) => chunk.score >= minScore)
+    .slice(0, topK);
+}
+
+export function buildContextFromChunks(chunks: SearchResult[]): string {
+  if (!chunks.length) return "";
+
+  return chunks
+    .map((chunk, index) => {
+      return `
+[Konteks ${index + 1}]
+Judul Dokumen: ${chunk.documentTitle}
+Isi:
+${chunk.text}
+`;
+    })
+    .join("\n\n");
+}
+
+export function getUniqueSources(chunks: SearchResult[]) {
+  const sourceMap = new Map<
+    string,
+    {
+      documentId: string;
+      title: string;
+      url: string | null;
+      score: number;
+    }
+  >();
+
+  for (const chunk of chunks) {
+    if (!sourceMap.has(chunk.documentId)) {
+      sourceMap.set(chunk.documentId, {
+        documentId: chunk.documentId,
+        title: chunk.documentTitle,
+        url: chunk.documentUrl || null,
+        score: Number(chunk.score.toFixed(3)),
+      });
+    }
+  }
+
+  return Array.from(sourceMap.values());
+}
