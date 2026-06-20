@@ -46,7 +46,7 @@ function App() {
       return <LandingPage onSelect={(mode) => setAuthPage(mode)} />;
     }
     if (authPage === "register") {
-      return <Register onShowLogin={() => setAuthPage("login_user")} />;
+      return <Register onShowLogin={() => setAuthPage("login_user")} onLogin={handleLogin} />;
     }
     if (authPage === "login_admin") {
       return <LoginAdmin onLogin={handleLogin} onBack={() => setAuthPage("landing")} />;

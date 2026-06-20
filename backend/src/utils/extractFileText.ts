@@ -40,10 +40,13 @@ export async function extractFileText(
 
   if (
     mimetype ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    mimetype === "application/msword"
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   ) {
     return extractDocxText(filePath);
+  }
+
+  if (mimetype === "application/msword") {
+    throw new Error("DOC extraction is not supported yet");
   }
 
   if (
@@ -53,5 +56,5 @@ export async function extractFileText(
     return extractXlsxText(filePath);
   }
 
-  throw new Error("Format file tidak didukung. Gunakan PDF, DOC, DOCX, atau XLSX.");
+  throw new Error("Format file tidak didukung. Gunakan PDF, DOC, DOCX, XLSX, atau TXT.");
 }

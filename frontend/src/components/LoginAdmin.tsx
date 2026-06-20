@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { AlertModal, type AlertType } from "./AlertModal";
 
 type LoginAdminProps = {
   onLogin: (username: string, role: string) => void;
@@ -13,6 +14,17 @@ function LoginAdmin({ onLogin, onBack }: LoginAdminProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [alertState, setAlertState] = useState<{isOpen: boolean, title: string, message: string, type: AlertType, onConfirm?: () => void, confirmText?: string}>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "error"
+  });
+
+  const showAlert = (title: string, message: string, type: AlertType, onConfirm?: () => void, confirmText?: string) => {
+    setAlertState({ isOpen: true, title, message, type, onConfirm, confirmText });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,17 +38,33 @@ function LoginAdmin({ onLogin, onBack }: LoginAdminProps) {
       });
       const data = await response.json();
 
-      if (data.status === "success" && data.data.role === "admin") {
-        localStorage.setItem("isLogin", "true");
-        localStorage.setItem("username", data.data.name);
-        localStorage.setItem("role", "admin");
-        localStorage.setItem("token", data.token);
-        onLogin(data.data.name, "admin");
+      if (data.status === "success") {
+        if (data.data?.role === "admin") {
+          showAlert(
+            "Login Berhasil",
+            "Selamat datang kembali, Admin SSC.",
+            "success",
+            () => {
+              localStorage.setItem("isLogin", "true");
+              localStorage.setItem("username", data.data.name);
+              localStorage.setItem("role", "admin");
+              localStorage.setItem("token", data.token);
+              onLogin(data.data.name, "admin");
+            },
+            "Masuk Dashboard"
+          );
+        } else {
+          showAlert(
+            "Login Admin Gagal",
+            "Akun ini bukan akun admin. Silakan masuk melalui halaman pengguna.",
+            "error"
+          );
+        }
       } else {
-        alert(data.message || "Kredensial Admin tidak valid!");
+        showAlert("Login Gagal", data.message || "Kredensial Admin tidak valid!", "error");
       }
     } catch (error) {
-      alert("Terjadi kesalahan saat menghubungi server.");
+      showAlert("Kesalahan Sistem", "Terjadi kesalahan saat menghubungi server.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -44,32 +72,31 @@ function LoginAdmin({ onLogin, onBack }: LoginAdminProps) {
 
   return (
     <div 
-      className="flex items-center justify-center min-h-screen bg-cover bg-center relative"
+      className="flex items-center justify-center min-h-screen relative p-4 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/img/bg-login.jpg')" }}
     >
-      <div className="absolute inset-0 bg-blue-900/60 backdrop-blur-sm" />
-      <Card className="w-full max-w-md shadow-2xl border-blue-200 relative z-10 bg-background/95 backdrop-blur-sm">
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50" />
+      <Card className="w-full max-w-md shadow-2xl border-0 rounded-2xl relative z-10 bg-white">
         <button 
           onClick={onBack}
-          className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+          className="absolute top-4 left-4 p-2 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors"
           title="Kembali"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         
-        <CardHeader className="space-y-1 mt-4">
-          <div className="mx-auto w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-blue-700 tracking-tight text-center mb-2">
-            Portal Admin SSC
+        <CardHeader className="space-y-2 mt-6 flex flex-col items-center">
+          <img src="/img/logo_transparent.png" alt="SSC Logo" className="w-16 h-16 object-contain mb-2" />
+          <CardTitle className="text-2xl font-bold text-gray-900 tracking-tight text-center">
+            Masuk Admin SSC
           </CardTitle>
-          <CardDescription className="text-center">
-            Login menggunakan kredensial staf administrasi SSC
+          <CardDescription className="text-center text-gray-500">
+            Kelola basis pengetahuan dan layanan SSC ChatBot
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-8">
             <div className="space-y-2">
               <Input
                 type="text"
@@ -77,27 +104,49 @@ function LoginAdmin({ onLogin, onBack }: LoginAdminProps) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="focus-visible:ring-blue-500"
+                className="rounded-xl border-gray-300 focus:ring-[#B31217]"
               />
             </div>
-            <div className="space-y-2">
+            <div className="relative">
               <Input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Admin Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="focus-visible:ring-blue-500"
+                className="rounded-xl border-gray-300 focus:ring-[#B31217] pr-10"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none flex items-center justify-center"
+                title={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-              {isLoading ? "Memproses..." : "Login sebagai Admin"}
+          <CardFooter className="flex flex-col space-y-4 px-8 pb-8">
+            <Button 
+              type="submit" 
+              className="w-full rounded-xl bg-[#B31217] hover:bg-[#8B0E12] text-white font-medium py-6 transition-all shadow-md" 
+              disabled={isLoading}
+            >
+              {isLoading ? "Memproses..." : "Masuk Dashboard"}
             </Button>
           </CardFooter>
         </form>
       </Card>
+
+      <AlertModal 
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+        onConfirm={alertState.onConfirm}
+        confirmText={alertState.confirmText}
+      />
     </div>
   );
 }

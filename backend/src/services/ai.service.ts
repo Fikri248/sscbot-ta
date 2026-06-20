@@ -8,6 +8,7 @@ const groq = new Groq({
 type GenerateAnswerParams = {
   question: string;
   context: string;
+  isLinkQuery?: boolean;
 };
 
 export async function rewriteQuestionForRetrieval(
@@ -56,6 +57,7 @@ Aturan:
 export async function generateAnswerWithAI({
   question,
   context,
+  isLinkQuery,
 }: GenerateAnswerParams): Promise<string> {
   const hasContext = context && context.trim().length > 80;
 
@@ -67,7 +69,7 @@ export async function generateAnswerWithAI({
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       temperature: 0.2,
-      max_tokens: 1000,
+      max_tokens: isLinkQuery ? 2000 : 1000,
       messages: [
         {
           role: "system",
@@ -75,7 +77,24 @@ export async function generateAnswerWithAI({
         },
         {
           role: "user",
-          content: `
+          content: isLinkQuery && context.includes('http') ? `
+User sedang mencari daftar link atau tautan SSC.
+Konteks daftar link yang tersedia:
+${context}
+
+Instruksi jawaban:
+- Tampilkan SEMUA link yang ada di dalam konteks.
+- Format WAJIB:
+  1. Nama layanan: URL
+  2. Nama layanan: URL
+- JIKA ada link yang tidak ada di konteks, abaikan saja.
+- Jangan menambahkan penjelasan tambahan.
+- Jangan memotong URL.
+- Jangan mengganti URL.
+- Jangan membuat link baru.
+- Jangan menulis "(tidak tersedia)".
+- Jangan menulis "Maaf" atau "Namun".
+` : `
 Pertanyaan mahasiswa:
 ${question}
 
@@ -84,21 +103,27 @@ ${context}
 
 Instruksi jawaban:
 - Sintesis seluruh informasi dari konteks menjadi satu jawaban utuh.
+- Jika konteks berisi informasi yang relevan, jawab langsung tanpa awalan "Maaf", "Namun", atau "tidak menemukan informasi".
+- Gunakan penolakan hanya jika konteks benar-benar kosong atau sama sekali tidak relevan dengan pertanyaan.
 - Jangan pernah menyebutkan kata "Konteks", "Dokumen", "Referensi", "Sumber", atau "Chunk".
 - Jawab seolah-olah kamu adalah Asisten SSC yang sudah menguasai informasi tersebut dari ingatanmu.
 - Jangan mengarang informasi di luar konteks.
-- Jika pertanyaan di luar konteks layanan akademik atau tugas akhir, tolak dengan sopan.
-- Jika informasi tidak ada dalam konteks, katakan bahwa informasi belum tersedia pada dokumen SSC yang ada.
+- Jika informasi benar-benar tidak ada dalam konteks, katakan bahwa informasi tersebut belum tersedia.
 - Buat jawaban rapi, natural, dan mudah dipahami seperti ChatGPT.
 `,
         },
       ],
     });
 
-    return (
-      completion.choices[0]?.message?.content?.trim() ||
-      "Maaf, saya belum dapat membuat jawaban dari dokumen yang tersedia."
-    );
+    let rawContent = completion.choices[0]?.message?.content?.trim() || "";
+    if (rawContent) {
+      rawContent = rawContent
+        .replace(/\*\*/g, "")
+        .replace(/__/g, "")
+        .replace(/^#+\s+/gm, "");
+    }
+
+    return rawContent || "Maaf, saya belum dapat membuat jawaban dari dokumen yang tersedia.";
   } catch (error) {
     console.error("Groq AI Service Error:", error);
     return "Maaf, layanan AI sedang mengalami gangguan teknis atau sibuk. Silakan coba beberapa saat lagi.";

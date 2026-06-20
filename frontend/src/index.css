@@ -101,6 +101,30 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#F8FAFC] text-[#111827] font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .brutalist-card {
+    @apply border-[3px] border-[#111827] bg-[#FFFFFF] shadow-[4px_4px_0px_#111827] transition-all;
+  }
+  .brutalist-card-hover {
+    @apply brutalist-card hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[6px_6px_0px_#111827] cursor-pointer;
+  }
+  .brutalist-button {
+    @apply border-[3px] border-[#111827] bg-[#DC2626] text-white font-bold shadow-[4px_4px_0px_#111827] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none hover:bg-red-700 transition-all;
+  }
+  .brutalist-button-outline {
+    @apply border-[3px] border-[#111827] bg-[#FFFFFF] text-[#111827] font-bold shadow-[4px_4px_0px_#111827] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none hover:bg-gray-50 transition-all;
+  }
+  .brutalist-input {
+    @apply border-[3px] border-[#111827] bg-[#FFFFFF] shadow-[4px_4px_0px_#111827] focus:outline-none focus:ring-0 text-[#111827];
+  }
+  .brutalist-bubble-user {
+    @apply border-[3px] border-[#111827] bg-[#DC2626] text-white shadow-[4px_4px_0px_#111827] rounded-xl rounded-tr-none p-4;
+  }
+  .brutalist-bubble-bot {
+    @apply border-[3px] border-[#111827] bg-[#FFFFFF] text-[#111827] shadow-[4px_4px_0px_#111827] rounded-xl rounded-tl-none p-4;
   }
 }

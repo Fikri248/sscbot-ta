@@ -12,6 +12,7 @@ import { getAllDocumentChunks } from "../services/document.service";
 import { isAskingForSource } from "../utils/sourceIntent";
 import { isAskingForAdmin } from "../utils/adminIntent";
 import { isChitchat } from "../utils/chitchatIntent";
+import { resolveOriginalSourceUrl, findMatchingImportantLinks } from "../utils/sourceUrlResolver";
 
 type ChatMessage = {
   id: string;
@@ -156,6 +157,77 @@ export async function sendChatMessage(req: Request, res: Response) {
       saveChat(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
+    if (["bantu saya", "bantuan", "saya butuh bantuan", "help", "bisa bantu"].includes(lowerMsg)) {
+      const answer = "Saya bisa membantu menjawab pertanyaan seputar layanan akademik SSC, tugas akhir, surat aktif mahasiswa, TOSS, cumlaude, kelulusan, dan link dokumen penting. Silakan tanyakan kebutuhan Anda.";
+      saveChat(sessionId, "assistant", answer, { sources: [] });
+      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
+    }
+
+    // 1.5 Source Follow-up Fast-Path
+    const isSourceFollowUp = (() => {
+      const normalized = cleanMessage.toLowerCase();
+      const phrases = [
+        "mana sumbernya", "mana sumber dokumennya", "sumber dokumennya mana",
+        "dari dokumen apa", "dokumen sumbernya apa", "mana link sumber itu",
+        "link sumbernya mana", "sumber link", "source", "references", "sumbernya dari mana"
+      ];
+      return phrases.some(p => normalized.includes(p));
+    })();
+
+    if (isSourceFollowUp) {
+      const sessionMessages = chatMessages.filter((m) => m.sessionId === sessionId);
+      // Remove the very last message which is the current user query, then find last assistant
+      const priorMessages = sessionMessages.slice(0, -1);
+      const lastAssistantMsg = [...priorMessages].reverse().find((m) => m.role === "assistant");
+
+      if (lastAssistantMsg) {
+        const sources = lastAssistantMsg.sources || (lastAssistantMsg as any).metadata?.sources || (lastAssistantMsg as any).extra?.sources;
+        
+        if (!sources || sources.length === 0) {
+          const answer = "Jawaban sebelumnya tidak berasal dari dokumen SSC sehingga tidak memiliki sumber dokumen yang dapat ditampilkan.";
+          saveChat(sessionId, "assistant", answer, { sources: [] });
+          return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
+        }
+        
+        const validSources: { title: string, url: string }[] = [];
+        sources.forEach((src: any) => {
+          const rawUrl = src.url || src.file_url;
+          const rawTitle = src.title || src.document_title || "";
+          const originalUrl = resolveOriginalSourceUrl(rawTitle, rawUrl);
+          if (originalUrl) {
+            const cleanTitle = rawTitle.replace(/^\d+[\.\-]+\s*/, "");
+            validSources.push({
+              title: cleanTitle,
+              url: originalUrl
+            });
+          }
+        });
+
+        if (validSources.length === 0) {
+          const answer = "Sumber jawaban sebelumnya ditemukan, tetapi tautan sumber belum tersedia.";
+          saveChat(sessionId, "assistant", answer, { sources });
+          return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: false });
+        }
+
+        const isLinkFollowUp = cleanMessage.toLowerCase().includes("link");
+        let answer = isLinkFollowUp 
+          ? "Link sumber yang tersedia:\n\n" 
+          : "Sumber jawaban sebelumnya berasal dari:\n\n";
+          
+        validSources.forEach((src, idx) => {
+          answer += `${idx + 1}. ${src.title}\n   Link: ${src.url}\n\n`;
+        });
+        
+        answer = answer.trim();
+        
+        saveChat(sessionId, "assistant", answer, { sources });
+        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: true });
+      } else {
+        const answer = "Maaf, tidak ada sumber dokumen spesifik dari percakapan sebelumnya.";
+        saveChat(sessionId, "assistant", answer, { sources: [] });
+        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
+      }
+    }
 
     // 2. Cheap Local Domain Check
     const hasDomainKeywords = (text: string) => {
@@ -164,7 +236,8 @@ export async function sendChatMessage(req: Request, res: Response) {
         "bimbingan", "dosen", "akademik", "ssc", "yudisium", "lulus",
         "jadwal", "format", "pedoman", "revisi", "nilai", "ipk", "pembimbing", "penguji",
         "mahasiswa", "surat", "aktif", "pengantar", "toss", "sk", "sks",
-        "kelulusan", "cumlaude", "summa", "pendaftaran", "persyaratan", "dokumen", "administrasi", "layanan"
+        "kelulusan", "cumlaude", "summa", "pendaftaran", "persyaratan", "dokumen", "administrasi", "layanan",
+        "link", "tautan", "linktree", "form", "template", "panduan"
       ];
       const normalized = text.toLowerCase();
       return domainKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(normalized));
@@ -229,8 +302,48 @@ ATURAN:
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
-    const relevantChunks = await searchRelevantChunks(
-      retrievalQuestion,
+    const isLinkQuery = (() => {
+      const normalized = cleanMessage.toLowerCase();
+      return normalized.includes("link penting") ||
+        normalized.includes("link ssc") ||
+        normalized.includes("tautan ssc") ||
+        normalized.includes("tautan penting") ||
+        normalized.includes("daftar link") ||
+        normalized.includes("daftar tautan") ||
+        normalized.includes("mana link") ||
+        normalized.includes("linktree") ||
+        (normalized.includes("link") && normalized.split(" ").length < 8);
+    })();
+    
+    if (isLinkQuery) {
+      const matchedLinks = findMatchingImportantLinks(cleanMessage);
+      if (matchedLinks && matchedLinks.length > 0) {
+        let answer = "Link sumber yang tersedia:\n\n";
+        matchedLinks.forEach((link, idx) => {
+          answer += `${idx + 1}. ${link.label}\n   Link: ${link.url}\n\n`;
+        });
+        answer = answer.trim();
+        saveChat(sessionId, "assistant", answer, { sources: [] });
+        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
+      }
+    }
+
+    const isSuratAktifQuery = (() => {
+      const normalized = cleanMessage.toLowerCase();
+      return normalized.includes("surat keaktifan") ||
+             normalized.includes("surat aktif") ||
+             normalized.includes("keaktifan mahasiswa") ||
+             normalized.includes("keterangan aktif") ||
+             normalized.includes("surat keterangan aktif");
+    })();
+
+    let finalRetrievalQuestion = retrievalQuestion;
+    if (isSuratAktifQuery) {
+      finalRetrievalQuestion = "panduan pengajuan surat keterangan aktif mahasiswa layanan SSC syarat form pengajuan surat aktif mahasiswa";
+    }
+
+    let relevantChunks = await searchRelevantChunks(
+      finalRetrievalQuestion,
       allChunks,
       {
         topK: 3,
@@ -249,9 +362,10 @@ ATURAN:
     const answer = await generateAnswerWithAI({
       question: cleanMessage,
       context,
+      isLinkQuery: false
     });
 
-    const sources = wantsSource ? getUniqueSources(relevantChunks) : [];
+    const sources = getUniqueSources(relevantChunks);
 
     saveChat(sessionId, "assistant", answer, {
       sources,

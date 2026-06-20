@@ -182,7 +182,10 @@ export async function importDatasetFromFolder() {
       continue;
     }
 
-    if (existingDocs.some(d => d.originalName === file)) {
+    if (
+      existingDocs.some(d => d.originalName === file) ||
+      existingChunks.some(c => c.documentTitle === file)
+    ) {
       errors.push(`Skipped ${file}: Already indexed`);
       skipped++;
       continue;
@@ -233,10 +236,14 @@ export async function importDatasetFromFolder() {
 
       const uploadedAt = new Date().toISOString();
 
-      await pool.query(
-        'INSERT INTO documents (id, title, fileName, originalName, mimetype, url, totalChunks, uploadedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [documentId, file, file, file, mimetype, fileUrl, embeddedChunks.length, uploadedAt]
-      );
+      try {
+        await pool.query(
+          'INSERT INTO documents (id, title, fileName, originalName, mimetype, url, totalChunks, uploadedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [documentId, file, file, file, mimetype, fileUrl, embeddedChunks.length, uploadedAt]
+        );
+      } catch (dbErr) {
+        console.warn(`Failed to insert ${file} into MySQL, but continuing JSON indexing...`, dbErr);
+      }
 
       newChunks.push(...embeddedChunks);
       imported++;
