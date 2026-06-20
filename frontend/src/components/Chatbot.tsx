@@ -522,7 +522,7 @@ function Chatbot({ onLogout }: ChatbotProps) {
               </div>
               <h2 className="text-3xl md:text-5xl font-black text-center mb-4 uppercase">Selamat Datang di<br/>SSC Chatbot</h2>
               <p className="text-center font-bold text-gray-600 max-w-2xl mb-12 text-lg">
-                Tanyakan informasi seputar tugas akhir, layanan SSC, surat akademik, sidang, kelulusan, dan layanan mahasiswa.
+                Tanyakan informasi seputar tugas akhir, surat akademik, sidang, kelulusan, dan pembimbing/penguji.
               </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">

@@ -106,6 +106,7 @@ Instruksi jawaban:
 - Jika konteks berisi informasi yang relevan, jawab langsung tanpa awalan "Maaf", "Namun", atau "tidak menemukan informasi".
 - Gunakan penolakan hanya jika konteks benar-benar kosong atau sama sekali tidak relevan dengan pertanyaan.
 - Jangan pernah menyebutkan kata "Konteks", "Dokumen", "Referensi", "Sumber", atau "Chunk".
+- Jangan menampilkan URL atau tautan kecuali pengguna secara eksplisit meminta link, tautan, atau sumber.
 - Jawab seolah-olah kamu adalah Asisten SSC yang sudah menguasai informasi tersebut dari ingatanmu.
 - Jangan mengarang informasi di luar konteks.
 - Jika informasi benar-benar tidak ada dalam konteks, katakan bahwa informasi tersebut belum tersedia.
@@ -120,7 +121,13 @@ Instruksi jawaban:
       rawContent = rawContent
         .replace(/\*\*/g, "")
         .replace(/__/g, "")
-        .replace(/^#+\s+/gm, "");
+        .replace(/^#+\s+/gm, "")
+        .replace(/i\s?gadis/gi, "iGracias");
+
+      if (!isLinkQuery) {
+        rawContent = rawContent.replace(/[^.\n]*?(https?:\/\/[^\s]+|linktr\.ee[^\s]*)[^.\n]*\.?/gi, "");
+        rawContent = rawContent.replace(/\n{3,}/g, "\n\n").trim();
+      }
     }
 
     return rawContent || "Maaf, saya belum dapat membuat jawaban dari dokumen yang tersedia.";
