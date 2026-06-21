@@ -180,5 +180,19 @@
     "updatedAt": "2026-06-19T16:23:05.338Z",
     "contentHash": "fb701210725ddcd1d5448f0c544e87a844fba0a7e619c43f5bd7246b2e3016d5",
     "generatedBy": "manualImport"
+  },
+  {
+    "id": "1782017304247",
+    "title": "Test Auto Sync Updated",
+    "fileName": "test-auto-sync.txt",
+    "mimetype": "text/plain",
+    "sourceUrl": null,
+    "localUrl": "/dataset/test-auto-sync.txt",
+    "extractedText": "Ini adalah dokumen uji coba yang sudah diperbarui untuk memastikan auto sync knowledge base berjalan setelah update dataset.",
+    "textLength": 124,
+    "chunkCount": 1,
+    "updatedAt": "2026-06-21T04:51:11.152Z",
+    "contentHash": "1782017304248",
+    "generatedBy": "adminDashboard"
   }
 ]

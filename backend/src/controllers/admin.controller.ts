@@ -22,7 +22,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         totalUsers,
         activeChats: chatSessions.length,
         totalMessages: chatMessages.length,
-        aiTokensUsed: chatMessages.length * 15 // just an estimate for now
+        aiTokensUsed: chatMessages.length * 15
       }
     });
   } catch (error) {
@@ -35,7 +35,7 @@ export const getNotifications = async (req: Request, res: Response) => {
     const [userRows]: any = await pool.query(
       "SELECT id, name, email FROM users WHERE role = 'user' ORDER BY id DESC LIMIT 5"
     );
-    
+
     const userActivities = userRows.map((user: any) => {
       const timestamp = parseInt(user.id);
       const dateStr = isNaN(timestamp) ? new Date().toISOString() : new Date(timestamp).toISOString();
@@ -60,11 +60,9 @@ export const getNotifications = async (req: Request, res: Response) => {
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    const recent = allActivities.slice(0, 10);
-
     return res.json({
       status: "success",
-      data: recent
+      data: allActivities.slice(0, 10)
     });
   } catch (error) {
     return res.status(500).json({ status: "error", message: "Gagal mengambil notifikasi" });
@@ -88,7 +86,6 @@ export const getAllAdmins = async (req: Request, res: Response) => {
 
 export const getAdminById = async (req: Request, res: Response) => {
   const { id } = req.params;
-
   const admin = admins.find((item) => item.id === id);
 
   if (!admin) {
@@ -187,7 +184,6 @@ export const updateAdmin = async (req: Request, res: Response) => {
 
 export const deleteAdmin = async (req: Request, res: Response) => {
   const { id } = req.params;
-
   const adminIndex = admins.findIndex((admin) => admin.id === id);
 
   if (adminIndex === -1) {
@@ -212,6 +208,28 @@ let syncStatus = {
   totalDocuments: 0,
   totalChunks: 0,
 };
+
+async function runAutoSync() {
+  syncStatus = {
+    ...syncStatus,
+    isSyncing: true,
+    message: "Auto sync sedang berjalan",
+  };
+
+  const result = await importDatasetToScrapedFile();
+  const docs = getAllScrapedDocuments();
+  const totalChunks = docs.reduce((total, doc) => total + doc.chunkCount, 0);
+
+  syncStatus = {
+    isSyncing: false,
+    lastSyncAt: new Date().toISOString(),
+    message: "Auto sync selesai",
+    totalDocuments: docs.length,
+    totalChunks,
+  };
+
+  return result;
+}
 
 export const getDatasetList = async (req: Request, res: Response) => {
   try {
@@ -279,11 +297,11 @@ export const createDataset = async (req: Request, res: Response) => {
     docs.push(newDoc);
     saveScrapedDocuments(docs);
 
-    await importDatasetToScrapedFile();
+    await runAutoSync();
 
     return res.status(201).json({
       status: "success",
-      message: "Dataset berhasil ditambahkan dan knowledge base diperbarui",
+      message: "Dataset berhasil ditambahkan dan knowledge base otomatis disinkronkan",
       data: newDoc,
     });
   } catch (error) {
@@ -322,9 +340,11 @@ export const updateDataset = async (req: Request, res: Response) => {
 
     saveScrapedDocuments(docs);
 
+    await runAutoSync();
+
     return res.json({
       status: "success",
-      message: "Dataset berhasil diperbarui",
+      message: "Dataset berhasil diperbarui dan knowledge base otomatis disinkronkan",
       data: docs[index],
     });
   } catch (error) {
@@ -351,9 +371,11 @@ export const deleteDataset = async (req: Request, res: Response) => {
 
     saveScrapedDocuments(filteredDocs);
 
+    await runAutoSync();
+
     return res.json({
       status: "success",
-      message: "Dataset berhasil dihapus",
+      message: "Dataset berhasil dihapus dan knowledge base otomatis disinkronkan",
     });
   } catch (error) {
     return res.status(500).json({
@@ -365,24 +387,7 @@ export const deleteDataset = async (req: Request, res: Response) => {
 
 export const syncDataset = async (req: Request, res: Response) => {
   try {
-    syncStatus = {
-      ...syncStatus,
-      isSyncing: true,
-      message: "Sinkronisasi sedang berjalan",
-    };
-
-    const result = await importDatasetToScrapedFile();
-    const docs = getAllScrapedDocuments();
-
-    const totalChunks = docs.reduce((total, doc) => total + doc.chunkCount, 0);
-
-    syncStatus = {
-      isSyncing: false,
-      lastSyncAt: new Date().toISOString(),
-      message: "Sinkronisasi selesai",
-      totalDocuments: docs.length,
-      totalChunks,
-    };
+    const result = await runAutoSync();
 
     return res.json({
       status: "success",
