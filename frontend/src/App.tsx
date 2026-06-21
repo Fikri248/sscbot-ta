@@ -35,6 +35,7 @@ function App() {
     localStorage.removeItem("isLogin");
     localStorage.removeItem("username");
     localStorage.removeItem("role");
+    localStorage.removeItem("token");
     setUsername("");
     setRole("user");
     setIsLogin(false);

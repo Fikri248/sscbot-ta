@@ -11,6 +11,11 @@ export type ChatSource = {
   score?: number;
 };
 
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function requestJson(url: string, options?: RequestInit) {
   const response = await fetch(url, options);
   const data = await response.json().catch(() => ({}));
@@ -159,7 +164,7 @@ export async function clearChatHistory(sessionId?: string) {
 }
 
 export async function getDocuments() {
-  const data = await requestJson(`${API_BASE_URL}/documents`);
+  const data = await requestJson(`${API_BASE_URL}/documents`, { headers: getAuthHeaders() });
 
   return {
     status: "success",
@@ -175,6 +180,7 @@ export async function uploadDocument(file: File) {
 
   const data = await requestJson(`${API_BASE_URL}/documents/upload`, {
     method: "POST",
+    headers: getAuthHeaders(),
     body: formData,
   });
 
@@ -188,6 +194,7 @@ export async function uploadDocument(file: File) {
 export async function deleteDocument(id: string) {
   const data = await requestJson(`${API_BASE_URL}/documents/${id}`, {
     method: "DELETE",
+    headers: getAuthHeaders(),
   });
 
   return {
@@ -198,7 +205,7 @@ export async function deleteDocument(id: string) {
 }
 
 export async function getAdminDatasets() {
-  const data = await requestJson(`${API_BASE_URL}/admin/datasets`);
+  const data = await requestJson(`${API_BASE_URL}/admin/datasets`, { headers: getAuthHeaders() });
 
   return {
     status: "success",
@@ -210,6 +217,7 @@ export async function getAdminDatasets() {
 export async function deleteAdminDataset(id: string) {
   const data = await requestJson(`${API_BASE_URL}/admin/datasets/${id}`, {
     method: "DELETE",
+    headers: getAuthHeaders(),
   });
 
   return {
@@ -222,7 +230,7 @@ export async function deleteAdminDataset(id: string) {
 export async function syncAdminDataset() {
   const data = await requestJson(`${API_BASE_URL}/admin/sync`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
 
@@ -234,7 +242,7 @@ export async function syncAdminDataset() {
 }
 
 export async function getAdminSyncStatus() {
-  const data = await requestJson(`${API_BASE_URL}/admin/sync/status`);
+  const data = await requestJson(`${API_BASE_URL}/admin/sync/status`, { headers: getAuthHeaders() });
 
   return {
     status: "success",

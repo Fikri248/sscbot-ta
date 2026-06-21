@@ -12,12 +12,8 @@ const allowedMimeTypes = [
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/plain",
 ];
-
-const allowedExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt"];
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -36,17 +32,15 @@ const storage = multer.diskStorage({
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024,
+    fileSize: 20 * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-
-    if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
+    if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(
         new Error(
-          "Format file tidak didukung. Gunakan file PDF, DOC, DOCX, XLS, XLSX, atau TXT."
+          "Format file tidak didukung. Gunakan file PDF, DOC, DOCX, atau XLSX."
         )
       );
     }

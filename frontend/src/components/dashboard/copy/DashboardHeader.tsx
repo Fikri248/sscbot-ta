@@ -20,9 +20,7 @@ export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
 
   useEffect(() => {
     const fetchNotifications = () => {
-      fetch("http://localhost:5000/api/admin/notifications", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
-      })
+      fetch("http://localhost:5000/api/admin/notifications")
         .then((res) => res.json())
         .then((data) => {
           if (data.status === "success") {

@@ -69,7 +69,8 @@ export async function initDB() {
         generatedBy VARCHAR(100) NOT NULL DEFAULT 'system',
         uploadedAt VARCHAR(100) NOT NULL,
         updatedAt VARCHAR(100) NOT NULL,
-        deletedAt VARCHAR(100) NULL
+        deletedAt VARCHAR(100) NULL,
+        UNIQUE KEY uniq_documents_fileName (fileName)
       )
     `);
 
@@ -92,7 +93,10 @@ export async function initDB() {
         text LONGTEXT NOT NULL,
         embedding LONGTEXT NOT NULL,
         createdAt VARCHAR(100) NOT NULL,
-        INDEX idx_document_chunks_documentId (documentId)
+        INDEX idx_document_chunks_documentId (documentId),
+        CONSTRAINT fk_document_chunks_document
+          FOREIGN KEY (documentId) REFERENCES documents(id)
+          ON DELETE CASCADE
       )
     `);
 

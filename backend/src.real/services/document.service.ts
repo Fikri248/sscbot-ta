@@ -57,8 +57,7 @@ function getMimeTypeByExt(ext: string) {
   if (ext === ".pdf") return "application/pdf";
   if (ext === ".docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   if (ext === ".doc") return "application/msword";
-  if (ext === ".xlsx") return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-  if (ext === ".xls") return "application/vnd.ms-excel";
+  if (ext === ".xlsx" || ext === ".xls") return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   return "text/plain";
 }
 
@@ -124,7 +123,7 @@ async function saveDocumentAndChunks(params: {
   ensureStorageReady();
 
   const cleanText = params.extractedText.trim();
-  if (!cleanText || cleanText.length < 20) {
+  if (!cleanText || cleanText.length < 50) {
     throw new Error("Isi dokumen tidak dapat dibaca atau terlalu pendek. Pastikan file berisi teks yang dapat dibaca.");
   }
 
@@ -155,7 +154,6 @@ async function saveDocumentAndChunks(params: {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
         ON DUPLICATE KEY UPDATE
           title = VALUES(title),
-          fileName = VALUES(fileName),
           originalName = VALUES(originalName),
           mimetype = VALUES(mimetype),
           url = VALUES(url),
@@ -210,6 +208,7 @@ async function saveDocumentAndChunks(params: {
     }
 
     await connection.commit();
+
     await syncDocumentChunksJsonFromDatabase();
 
     const document: DocumentRecord = {
@@ -256,14 +255,6 @@ export async function getAllDocuments(): Promise<DocumentRecord[]> {
   }
 }
 
-export async function getDocumentById(documentId: string): Promise<DocumentRecord | null> {
-  const [rows]: any = await pool.query(
-    `SELECT * FROM documents WHERE id = ? AND deletedAt IS NULL LIMIT 1`,
-    [documentId]
-  );
-  return rows[0] || null;
-}
-
 export async function getAllDocumentChunks(options?: { preferDatabaseOnly?: boolean }): Promise<DocumentChunk[]> {
   try {
     const [rows]: any = await pool.query(
@@ -291,70 +282,21 @@ export async function getAllDocumentChunks(options?: { preferDatabaseOnly?: bool
   }
 }
 
-export async function processUploadedDocument(file: Express.Multer.File, meta?: { title?: string; sourceUrl?: string | null }) {
+export async function processUploadedDocument(file: Express.Multer.File) {
   const extractedText = await extractFileText(String(file.path), String(file.mimetype));
   const fileUrl = `/uploads/${file.filename}`;
 
   return saveDocumentAndChunks({
-    title: meta?.title?.trim() || file.originalname,
+    title: file.originalname,
     fileName: file.filename,
     originalName: file.originalname,
     mimetype: file.mimetype,
     url: fileUrl,
     localUrl: fileUrl,
-    sourceUrl: meta?.sourceUrl || null,
+    sourceUrl: null,
     extractedText,
     generatedBy: "adminUpload",
   });
-}
-
-export async function updateUploadedDocument(documentId: string, params: {
-  file?: Express.Multer.File;
-  title?: string;
-  sourceUrl?: string | null;
-}) {
-  const existing = await getDocumentById(documentId);
-  if (!existing) {
-    return { updated: false, message: "Dokumen tidak ditemukan." };
-  }
-
-  if (params.file) {
-    const extractedText = await extractFileText(String(params.file.path), String(params.file.mimetype));
-    const fileUrl = `/uploads/${params.file.filename}`;
-
-    const result = await saveDocumentAndChunks({
-      id: existing.id,
-      title: params.title?.trim() || existing.title || params.file.originalname,
-      fileName: params.file.filename,
-      originalName: params.file.originalname,
-      mimetype: params.file.mimetype,
-      url: fileUrl,
-      localUrl: fileUrl,
-      sourceUrl: params.sourceUrl === undefined ? existing.sourceUrl : params.sourceUrl,
-      extractedText,
-      generatedBy: "adminReplaceFile",
-    });
-
-    const oldPossibleFiles = [
-      path.join(UPLOAD_DIR, existing.fileName),
-      path.join(DATASET_DIR, existing.fileName),
-    ];
-
-    for (const oldPath of oldPossibleFiles) {
-      if (fs.existsSync(oldPath) && path.basename(oldPath) !== params.file.filename) {
-        fs.unlinkSync(oldPath);
-      }
-    }
-
-    return { updated: true, document: result.document };
-  }
-
-  const result = await updateTextDataset(documentId, {
-    title: params.title,
-    sourceUrl: params.sourceUrl,
-  });
-
-  return result;
 }
 
 export async function createTextDataset(params: {
@@ -492,7 +434,7 @@ export async function importDatasetFromFolder() {
 
     try {
       const extractedText = await extractFileText(filePath, mimetype);
-      if (!extractedText || extractedText.trim().length < 20) {
+      if (!extractedText || extractedText.trim().length < 50) {
         errors.push(`Skipped ${file}: Text too short or unreadable`);
         skipped++;
         continue;

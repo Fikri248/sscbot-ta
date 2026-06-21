@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from "react"
-import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw, Upload } from "lucide-react"
+import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw, Upload, Edit3, Save, X, Eye } from "lucide-react"
 
 type DocumentItem = {
   id: string
   title: string
   fileName: string
+  storedFileName?: string
   mimetype: string
+  sourceUrl?: string | null
+  localUrl?: string | null
   chunkCount: number
   textLength: number
   updatedAt: string
@@ -25,12 +28,21 @@ export function KnowledgeBase() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null)
+  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editSourceUrl, setEditSourceUrl] = useState("")
+  const [editText, setEditText] = useState("")
+  const [replacementFile, setReplacementFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const replaceFileInputRef = useRef<HTMLInputElement>(null)
+  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token") || ""}` })
 
   const fetchDocuments = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch("http://localhost:5000/api/admin/datasets")
+      const response = await fetch("http://localhost:5000/api/admin/datasets", { headers: authHeaders() })
       const result = await response.json()
 
       if (result.status === "success") {
@@ -45,7 +57,7 @@ export function KnowledgeBase() {
 
   const fetchSyncStatus = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/admin/sync/status")
+      const response = await fetch("http://localhost:5000/api/admin/sync/status", { headers: authHeaders() })
       const result = await response.json()
 
       if (result.status === "success") {
@@ -64,6 +76,7 @@ export function KnowledgeBase() {
       const response = await fetch("http://localhost:5000/api/admin/sync", {
         method: "POST",
         headers: {
+          ...authHeaders(),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({}),
@@ -97,27 +110,17 @@ export function KnowledgeBase() {
     setIsUploading(true)
     const formData = new FormData()
     formData.append("file", file)
+    formData.append("title", file.name)
 
     try {
       const response = await fetch("http://localhost:5000/api/documents/upload", {
         method: "POST",
+        headers: authHeaders(),
         body: formData,
       })
       const result = await response.json()
       if (result.success) {
-        alert("Dokumen berhasil diunggah!")
-        
-        // Also call sync to ensure it enters the system
-        try {
-          await fetch("http://localhost:5000/api/admin/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          })
-        } catch (e) {
-          console.error("Auto sync failed after upload", e)
-        }
-
+        alert("Dokumen berhasil diunggah dan langsung masuk Aiven + document_chunks.")
         await fetchDocuments()
         await fetchSyncStatus()
       } else {
@@ -134,18 +137,111 @@ export function KnowledgeBase() {
     }
   }
 
+  const handleOpenEdit = (doc: DocumentItem) => {
+    setEditingDoc(doc)
+    setEditTitle(doc.title)
+    setEditSourceUrl(doc.sourceUrl || "")
+    setEditText("")
+    setReplacementFile(null)
+    if (replaceFileInputRef.current) {
+      replaceFileInputRef.current.value = ""
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingDoc(null)
+    setEditTitle("")
+    setEditSourceUrl("")
+    setEditText("")
+    setReplacementFile(null)
+    if (replaceFileInputRef.current) {
+      replaceFileInputRef.current.value = ""
+    }
+  }
+
+  const handleUpdate = async () => {
+    if (!editingDoc) return
+    if (!editTitle.trim()) {
+      alert("Judul dataset tidak boleh kosong.")
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      let response: Response
+
+      if (replacementFile) {
+        const formData = new FormData()
+        formData.append("title", editTitle.trim())
+        formData.append("sourceUrl", editSourceUrl.trim())
+        formData.append("file", replacementFile)
+
+        response = await fetch(`http://localhost:5000/api/documents/${editingDoc.id}`, {
+          method: "PUT",
+          headers: authHeaders(),
+          body: formData,
+        })
+      } else {
+        const payload: {
+          title: string
+          sourceUrl: string | null
+          extractedText?: string
+        } = {
+          title: editTitle.trim(),
+          sourceUrl: editSourceUrl.trim() || null,
+        }
+
+        if (editText.trim()) {
+          payload.extractedText = editText.trim()
+        }
+
+        response = await fetch(`http://localhost:5000/api/admin/datasets/${editingDoc.id}`, {
+          method: "PUT",
+          headers: {
+            ...authHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+      }
+
+      const result = await response.json()
+
+      if (result.status === "success" || result.success) {
+        alert(
+          replacementFile
+            ? "Dokumen berhasil diganti. File baru sudah diekstrak, chunk lama dihapus, chunk baru dibuat."
+            : editText.trim()
+            ? "Dataset berhasil diupdate. Chunk chatbot sudah diperbarui dari teks baru."
+            : "Metadata dataset berhasil diperbarui."
+        )
+        handleCancelEdit()
+        await fetchDocuments()
+        await fetchSyncStatus()
+      } else {
+        alert("Gagal update dataset: " + result.message)
+      }
+    } catch (error) {
+      console.error("Update error:", error)
+      alert("Terjadi kesalahan saat update dataset.")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   const handleDelete = async (id: string, title: string) => {
     if (!window.confirm(`Yakin ingin menghapus dataset "${title}"?`)) return
 
     try {
       const response = await fetch(`http://localhost:5000/api/admin/datasets/${id}`, {
         method: "DELETE",
+        headers: authHeaders(),
       })
 
       const result = await response.json()
 
       if (result.status === "success") {
-        alert("Dataset berhasil dihapus.")
+        alert("Dataset berhasil dihapus dari Aiven, document_chunks, dan file fisik jika ada.")
         await fetchDocuments()
         await fetchSyncStatus()
       } else {
@@ -155,6 +251,16 @@ export function KnowledgeBase() {
       console.error("Delete error:", error)
       alert("Terjadi kesalahan saat menghapus dataset.")
     }
+  }
+
+  const getFileType = (mimetype: string, fileName?: string) => {
+    const lowerName = (fileName || "").toLowerCase()
+    if (mimetype.includes("pdf") || lowerName.endsWith(".pdf")) return "PDF"
+    if (mimetype.includes("word") || lowerName.endsWith(".docx")) return "DOCX"
+    if (mimetype.includes("msword") || lowerName.endsWith(".doc")) return "DOC"
+    if (mimetype.includes("sheet") || lowerName.endsWith(".xlsx")) return "XLSX"
+    if (mimetype.includes("excel") || lowerName.endsWith(".xls")) return "XLS"
+    return "TXT"
   }
 
   useEffect(() => {
@@ -168,7 +274,7 @@ export function KnowledgeBase() {
         <div>
           <h2 className="text-lg font-semibold">Knowledge Base</h2>
           <p className="text-sm text-muted-foreground">
-            Kelola dataset, chunk, dan sinkronisasi knowledge base chatbot.
+            CRUD per dokumen PDF, DOC, DOCX, XLS, XLSX, dan TXT. Semua tersimpan ke Aiven dan dipakai chatbot.
           </p>
         </div>
 
@@ -188,10 +294,10 @@ export function KnowledgeBase() {
             onClick={handleUploadClick}
             disabled={isUploading}
             className="flex items-center gap-2 px-4 py-2 border border-input bg-background rounded-md hover:bg-muted transition disabled:opacity-50 text-sm font-medium"
-            title="Upload Dokumen Baru"
+            title="Create / Upload Dokumen Baru"
           >
             {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {isUploading ? "Mengunggah..." : "Upload Dokumen"}
+            {isUploading ? "Mengunggah..." : "Create / Upload"}
           </button>
           <input
             type="file"
@@ -216,7 +322,7 @@ export function KnowledgeBase() {
         <div className="rounded-lg border p-4 bg-muted/20">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Database className="w-4 h-4" />
-            Total Dataset
+            Total Dokumen
           </div>
           <p className="text-2xl font-bold mt-2">{documents.length}</p>
         </div>
@@ -245,11 +351,151 @@ export function KnowledgeBase() {
         </div>
       </div>
 
+      {editingDoc && (
+        <div className="p-6 border-b bg-muted/20">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2">
+                <Edit3 className="w-4 h-4" />
+                Update Dokumen
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Untuk mengubah isi dokumen PDF/DOC/DOCX/XLS/XLSX/TXT, pilih file pengganti. Sistem akan menghapus chunk lama dan membuat chunk baru.
+              </p>
+            </div>
+            <button
+              onClick={handleCancelEdit}
+              className="p-2 rounded-md hover:bg-background transition"
+              title="Batal Edit"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-sm font-medium">Judul Dokumen</label>
+              <input
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+                className="mt-1 w-full px-3 py-2 border rounded-md bg-background"
+                placeholder="Masukkan judul dokumen"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Source URL / Link Sumber</label>
+              <input
+                value={editSourceUrl}
+                onChange={(event) => setEditSourceUrl(event.target.value)}
+                className="mt-1 w-full px-3 py-2 border rounded-md bg-background"
+                placeholder="Opsional, contoh: https://ssc.telu-sby.id/..."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-sm font-medium">File Pengganti</label>
+              <input
+                ref={replaceFileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                onChange={(event) => setReplacementFile(event.target.files?.[0] || null)}
+                className="mt-1 w-full px-3 py-2 border rounded-md bg-background"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Pilih file hanya jika ingin mengganti isi dokumen dan chunk chatbot.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">File Saat Ini</label>
+              <div className="mt-1 px-3 py-2 border rounded-md bg-background text-sm text-muted-foreground truncate">
+                {editingDoc.fileName}
+              </div>
+              {replacementFile && (
+                <p className="text-xs text-blue-600 mt-1">
+                  File baru: {replacementFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="text-sm font-medium">Isi Teks Baru Manual</label>
+            <textarea
+              value={editText}
+              onChange={(event) => setEditText(event.target.value)}
+              rows={6}
+              className="mt-1 w-full px-3 py-2 border rounded-md bg-background font-mono text-sm"
+              placeholder="Opsional. Dipakai jika tidak mengganti file, tapi ingin update chunk lewat teks manual. Contoh untuk tes: TES UPDATE AIVEN 2026 adalah BIRU LANGIT."
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Jika file pengganti dipilih, sistem memakai isi file pengganti. Jika file tidak dipilih tapi teks ini diisi, sistem memakai teks manual ini.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={handleCancelEdit}
+              disabled={isUpdating}
+              className="px-4 py-2 border rounded-md hover:bg-background transition disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleUpdate}
+              disabled={isUpdating}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition disabled:opacity-50"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isUpdating ? "Menyimpan..." : "Simpan Update"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {previewDoc && (
+        <div className="p-6 border-b bg-background">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Detail Dokumen
+              </h3>
+              <div className="mt-3 text-sm space-y-1 text-muted-foreground">
+                <p><span className="font-medium text-foreground">Judul:</span> {previewDoc.title}</p>
+                <p><span className="font-medium text-foreground">File:</span> {previewDoc.fileName}</p>
+                <p><span className="font-medium text-foreground">Tipe:</span> {getFileType(previewDoc.mimetype, previewDoc.fileName)}</p>
+                <p><span className="font-medium text-foreground">Chunks:</span> {previewDoc.chunkCount}</p>
+                <p><span className="font-medium text-foreground">Panjang teks:</span> {previewDoc.textLength?.toLocaleString("id-ID") || 0}</p>
+                {previewDoc.localUrl && (
+                  <p>
+                    <span className="font-medium text-foreground">File URL:</span>{" "}
+                    <a className="text-blue-600 underline" href={`http://localhost:5000${previewDoc.localUrl}`} target="_blank" rel="noreferrer">
+                      Buka file
+                    </a>
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setPreviewDoc(null)}
+              className="p-2 rounded-md hover:bg-muted transition"
+              title="Tutup Detail"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 sticky top-0">
             <tr>
-              <th className="px-6 py-4 font-medium">Judul Dataset</th>
+              <th className="px-6 py-4 font-medium">Judul Dokumen</th>
               <th className="px-6 py-4 font-medium">Nama File</th>
               <th className="px-6 py-4 font-medium">Tipe</th>
               <th className="px-6 py-4 font-medium">Chunks</th>
@@ -265,7 +511,7 @@ export function KnowledgeBase() {
                 <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <p>Memuat dataset knowledge base...</p>
+                    <p>Memuat dokumen knowledge base...</p>
                   </div>
                 </td>
               </tr>
@@ -274,7 +520,7 @@ export function KnowledgeBase() {
                 <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <FileText className="w-12 h-12 text-muted-foreground/30" />
-                    <p>Belum ada dataset di knowledge base.</p>
+                    <p>Belum ada dokumen di knowledge base.</p>
                   </div>
                 </td>
               </tr>
@@ -291,13 +537,7 @@ export function KnowledgeBase() {
                   </td>
 
                   <td className="px-6 py-4 text-muted-foreground">
-                    {doc.mimetype.includes("pdf")
-                      ? "PDF"
-                      : doc.mimetype.includes("word")
-                      ? "DOCX"
-                      : doc.mimetype.includes("sheet")
-                      ? "XLSX"
-                      : "TXT"}
+                    {getFileType(doc.mimetype, doc.fileName)}
                   </td>
 
                   <td className="px-6 py-4">
@@ -321,13 +561,29 @@ export function KnowledgeBase() {
                   </td>
 
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(doc.id, doc.title)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"
-                      title="Hapus Dataset"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setPreviewDoc(doc)}
+                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-md transition"
+                        title="Read / Detail Dokumen"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEdit(doc)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition"
+                        title="Update Dokumen"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc.id, doc.title)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"
+                        title="Delete Dokumen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

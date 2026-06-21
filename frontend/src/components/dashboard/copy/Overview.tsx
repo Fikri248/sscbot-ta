@@ -11,16 +11,12 @@ export function Overview() {
     totalUsers: 0,
     activeChats: 0,
     totalMessages: 0,
-    aiTokensUsed: 0,
-    totalDatasets: 0,
-    totalChunks: 0
+    aiTokensUsed: 0
   });
 
   useEffect(() => {
     const fetchStats = () => {
-      fetch("http://localhost:5000/api/admin/stats", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
-      })
+      fetch("http://localhost:5000/api/admin/stats")
         .then(res => res.json())
         .then(data => {
           if (data.status === "success") {

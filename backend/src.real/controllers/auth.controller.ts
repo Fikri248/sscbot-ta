@@ -16,7 +16,7 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    const [existing]: any = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    const [existing]: any = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({
         status: "error",
@@ -28,7 +28,7 @@ export const register = async (req: Request, res: Response) => {
     const id = Date.now().toString();
 
     await pool.query(
-      "INSERT INTO users (id, name, email, passwordHash, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
+      'INSERT INTO users (id, name, email, passwordHash, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
       [id, name, email, passwordHash, role, new Date().toISOString()]
     );
 
@@ -56,7 +56,7 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    const [rows]: any = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    const [rows]: any = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     
     if (rows.length === 0) {
       return res.status(404).json({
@@ -119,7 +119,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const logout = async (_req: Request, res: Response) => {
+export const logout = async (req: Request, res: Response) => {
   return res.json({
     status: "success",
     message: "Logout berhasil. Silakan hapus token di frontend.",
