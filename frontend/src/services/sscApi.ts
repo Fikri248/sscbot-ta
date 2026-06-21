@@ -24,54 +24,38 @@ async function requestJson(url: string, options?: RequestInit) {
 
 function normalizeFileUrl(url?: string | null) {
   if (!url) return undefined;
-
-  if (url.startsWith("http")) {
-    return url;
-  }
-
+  if (url.startsWith("http")) return url;
   return `${BACKEND_BASE_URL}${url}`;
 }
 
 function mapSourcesToOldFrontendFormat(sources: any[] = []): ChatSource[] {
   if (!Array.isArray(sources)) return [];
 
-  return sources.map((source, index) => {
-    return {
-      document_title:
-        source.document_title ||
-        source.documentTitle ||
-        source.title ||
-        source.file_name ||
-        "Dokumen sumber",
-      file_name:
-        source.file_name ||
-        source.fileName ||
-        source.title ||
-        source.documentTitle ||
-        "Dokumen sumber",
-      file_url: normalizeFileUrl(source.file_url || source.fileUrl || source.url),
-      chunk_index: source.chunk_index || source.chunkIndex || index + 1,
-      title: source.title || source.documentTitle || source.file_name,
-      url: normalizeFileUrl(source.url || source.file_url || source.fileUrl) || null,
-      score: source.score,
-    };
-  });
+  return sources.map((source, index) => ({
+    document_title:
+      source.document_title ||
+      source.documentTitle ||
+      source.title ||
+      source.file_name ||
+      "Dokumen sumber",
+    file_name:
+      source.file_name ||
+      source.fileName ||
+      source.title ||
+      source.documentTitle ||
+      "Dokumen sumber",
+    file_url: normalizeFileUrl(source.file_url || source.fileUrl || source.url),
+    chunk_index: source.chunk_index || source.chunkIndex || index + 1,
+    title: source.title || source.documentTitle || source.file_name,
+    url: normalizeFileUrl(source.url || source.file_url || source.fileUrl) || null,
+    score: source.score,
+  }));
 }
 
-/**
- * Dipakai oleh Chatbot.tsx:
- * startBackendChat("User SSC", "081234567890")
- *
- * Chatbot.tsx mengharapkan response:
- * result.data.user.id
- * result.data.session.id
- */
 export async function startChat(name?: string, phone?: string) {
   const data = await requestJson(`${API_BASE_URL}/chat/start`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: name || "User SSC",
       phone: phone || "081234567890",
@@ -100,27 +84,11 @@ export async function startChat(name?: string, phone?: string) {
     success: true,
     message: data.message || "Sesi chat berhasil dimulai.",
     data: {
-      user: {
-        id: userId,
-        name: name || "User SSC",
-        phone: phone || "081234567890",
-      },
-      session: {
-        id: sessionId,
-        sessionId,
-        title: "Chat Tugas Akhir",
-      },
+      user: { id: userId, name: name || "User SSC", phone: phone || "081234567890" },
+      session: { id: sessionId, sessionId, title: "Chat Tugas Akhir" },
     },
-    user: {
-      id: userId,
-      name: name || "User SSC",
-      phone: phone || "081234567890",
-    },
-    session: {
-      id: sessionId,
-      sessionId,
-      title: "Chat Tugas Akhir",
-    },
+    user: { id: userId, name: name || "User SSC", phone: phone || "081234567890" },
+    session: { id: sessionId, sessionId, title: "Chat Tugas Akhir" },
     sessionId,
   };
 }
@@ -129,34 +97,14 @@ export async function startChatSession(name?: string, phone?: string) {
   return startChat(name, phone);
 }
 
-/**
- * Dipakai oleh Chatbot.tsx:
- * sendBackendChatMessage(session.userId, session.sessionId, messageText)
- *
- * Jadi urutan parameternya HARUS:
- * userId, sessionId, message
- */
-export async function sendChatMessage(
-  userId: string,
-  sessionId: string,
-  message: string
-) {
+export async function sendChatMessage(userId: string, sessionId: string, message: string) {
   const data = await requestJson(`${API_BASE_URL}/chat/send`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      userId,
-      sessionId,
-      message,
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, sessionId, message }),
   });
 
-  const answer =
-    data.answer ||
-    data.message ||
-    "Maaf, saya belum mendapatkan jawaban dari backend.";
+  const answer = data.answer || data.message || "Maaf, saya belum mendapatkan jawaban dari backend.";
 
   return {
     status: data.success === false ? "error" : "success",
@@ -177,11 +125,7 @@ export async function sendChatMessage(
   };
 }
 
-export async function sendMessage(
-  userId: string,
-  sessionId: string,
-  message: string
-) {
+export async function sendMessage(userId: string, sessionId: string, message: string) {
   return sendChatMessage(userId, sessionId, message);
 }
 
@@ -205,9 +149,7 @@ export async function clearChatHistory(sessionId?: string) {
     ? `${API_BASE_URL}/chat/history?sessionId=${sessionId}`
     : `${API_BASE_URL}/chat/history`;
 
-  const data = await requestJson(url, {
-    method: "DELETE",
-  });
+  const data = await requestJson(url, { method: "DELETE" });
 
   return {
     status: "success",
@@ -255,6 +197,52 @@ export async function deleteDocument(id: string) {
   };
 }
 
+export async function getAdminDatasets() {
+  const data = await requestJson(`${API_BASE_URL}/admin/datasets`);
+
+  return {
+    status: "success",
+    success: true,
+    data: data.data || [],
+  };
+}
+
+export async function deleteAdminDataset(id: string) {
+  const data = await requestJson(`${API_BASE_URL}/admin/datasets/${id}`, {
+    method: "DELETE",
+  });
+
+  return {
+    status: "success",
+    success: true,
+    data,
+  };
+}
+
+export async function syncAdminDataset() {
+  const data = await requestJson(`${API_BASE_URL}/admin/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+
+  return {
+    status: "success",
+    success: true,
+    data,
+  };
+}
+
+export async function getAdminSyncStatus() {
+  const data = await requestJson(`${API_BASE_URL}/admin/sync/status`);
+
+  return {
+    status: "success",
+    success: true,
+    data: data.data,
+  };
+}
+
 export async function createSupportRequest(payload: {
   name: string;
   nim: string;
@@ -264,9 +252,7 @@ export async function createSupportRequest(payload: {
 }) {
   const data = await requestJson(`${API_BASE_URL}/support/requests`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
@@ -316,6 +302,11 @@ export default {
   uploadFile,
   deleteDocument,
   removeDocument,
+
+  getAdminDatasets,
+  deleteAdminDataset,
+  syncAdminDataset,
+  getAdminSyncStatus,
 
   createSupportRequest,
 };
