@@ -2,7 +2,7 @@ import Groq from "groq-sdk";
 import { TA_SYSTEM_PROMPT } from "../prompts/taPrompt";
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY || "dummy_key_to_prevent_compilation_crash",
 });
 
 type GenerateAnswerParams = {

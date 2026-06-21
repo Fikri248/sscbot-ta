@@ -217,6 +217,11 @@ async function runAutoSync() {
   };
 
   const result = await importDatasetToScrapedFile();
+  
+  // Explicitly sync chunks
+  const { syncScrapedDocumentsToChunks } = await import("../scripts/syncScrapedDocumentsToChunks");
+  await syncScrapedDocumentsToChunks();
+
   const docs = getAllScrapedDocuments();
   const totalChunks = docs.reduce((total, doc) => total + doc.chunkCount, 0);
 
@@ -360,16 +365,25 @@ export const deleteDataset = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const docs = getAllScrapedDocuments();
-    const filteredDocs = docs.filter((doc) => doc.id !== id);
+    const targetDoc = docs.find((doc) => doc.id === id);
 
-    if (docs.length === filteredDocs.length) {
+    if (!targetDoc) {
       return res.status(404).json({
         status: "error",
         message: "Dataset tidak ditemukan",
       });
     }
 
+    const filteredDocs = docs.filter((doc) => doc.id !== id);
     saveScrapedDocuments(filteredDocs);
+
+    // Delete physical file inside dataset directory if exists so sync won't recreate it
+    const fs = await import("fs");
+    const path = await import("path");
+    const physicalPath = path.join(process.cwd(), "dataset", targetDoc.fileName);
+    if (fs.existsSync(physicalPath)) {
+      fs.unlinkSync(physicalPath);
+    }
 
     await runAutoSync();
 

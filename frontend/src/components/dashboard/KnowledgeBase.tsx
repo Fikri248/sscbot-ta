@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw } from "lucide-react"
+import React, { useState, useEffect, useRef } from "react"
+import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw, Upload } from "lucide-react"
 
 type DocumentItem = {
   id: string
@@ -24,6 +24,8 @@ export function KnowledgeBase() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchDocuments = async () => {
     setIsLoading(true)
@@ -84,6 +86,54 @@ export function KnowledgeBase() {
     }
   }
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const response = await fetch("http://localhost:5000/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      })
+      const result = await response.json()
+      if (result.success) {
+        alert("Dokumen berhasil diunggah!")
+        
+        // Also call sync to ensure it enters the system
+        try {
+          await fetch("http://localhost:5000/api/admin/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          })
+        } catch (e) {
+          console.error("Auto sync failed after upload", e)
+        }
+
+        await fetchDocuments()
+        await fetchSyncStatus()
+      } else {
+        alert("Gagal mengunggah: " + result.message)
+      }
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("Terjadi kesalahan saat mengunggah dokumen.")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
   const handleDelete = async (id: string, title: string) => {
     if (!window.confirm(`Yakin ingin menghapus dataset "${title}"?`)) return
 
@@ -135,9 +185,26 @@ export function KnowledgeBase() {
           </button>
 
           <button
+            onClick={handleUploadClick}
+            disabled={isUploading}
+            className="flex items-center gap-2 px-4 py-2 border border-input bg-background rounded-md hover:bg-muted transition disabled:opacity-50 text-sm font-medium"
+            title="Upload Dokumen Baru"
+          >
+            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {isUploading ? "Mengunggah..." : "Upload Dokumen"}
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+            onChange={handleFileChange}
+          />
+
+          <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium"
           >
             {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
             {isSyncing ? "Sinkronisasi..." : "Sync Knowledge Base"}
