@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../config/database";
-import { chatSessions, chatMessages } from "./chat1.controller";
+import { chatSessions, chatMessages } from "./chat.controller";
 import {
   createTextDataset,
   deleteDocumentById,
@@ -267,7 +267,7 @@ export const updateDataset = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { title, sourceUrl, extractedText } = req.body;
 
-    const result = await updateTextDataset(id, { title, sourceUrl, extractedText });
+    const result = await updateTextDataset(String(id), { title, sourceUrl, extractedText });
 
     if (!result.updated) {
       return res.status(404).json({ status: "error", message: result.message });
@@ -288,7 +288,7 @@ export const updateDataset = async (req: Request, res: Response) => {
 export const deleteDataset = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const result = await deleteDocumentById(id);
+    const result = await deleteDocumentById(String(id));
 
     if (!result.deleted) {
       return res.status(404).json({ status: "error", message: result.message });

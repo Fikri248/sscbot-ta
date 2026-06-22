@@ -1,90 +1,158 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { getAllScrapedDocuments } from "../services/scrapedDataset.service";
-import { getAllDocumentChunks } from "../services/document.service";
+import { getAllDocumentChunks, syncDocumentChunksJsonFromDatabase, deleteDocumentById } from "../services/document.service";
 import { generateEmbedding } from "../services/embedding.service";
 import { chunkText } from "../utils/chunkText";
+import { pool } from "../config/database";
 
 const CHUNKS_PATH = path.join(process.cwd(), "src", "data", "documentChunks.json");
 
+function createContentHash(text: string) {
+  return crypto.createHash("sha256").update(text).digest("hex");
+}
+
 export async function syncScrapedDocumentsToChunks() {
   const scrapedDocs = getAllScrapedDocuments();
-  const chunks = await getAllDocumentChunks();
+  
+  // Test DB Connection
+  await pool.query("SELECT 1");
+  
+  const [existingDocs]: any = await pool.query("SELECT id, fileName, contentHash FROM documents WHERE deletedAt IS NULL");
+  const existingDocsMap = new Map<string, any>(existingDocs.map((d: any) => [d.fileName, d]));
 
-  let missingCount = 0;
-  let startingChunksCount = chunks.length;
+  let addedCount = 0;
+  let updatedCount = 0;
+  let skippedCount = 0;
 
   for (const doc of scrapedDocs) {
-    const hasChunks = chunks.some(c => c.documentTitle === doc.fileName || c.documentUrl === doc.localUrl);
-    
-    if (!hasChunks) {
-      console.log(`Missing chunks for: ${doc.fileName}`);
-      missingCount++;
+    const existing = existingDocsMap.get(doc.fileName);
+    const contentHash = doc.contentHash || createContentHash(doc.extractedText);
 
-      const newChunksRaw = chunkText(doc.extractedText, {
-        maxLength: 900,
-        overlap: 150
+    if (existing && existing.contentHash === contentHash) {
+      skippedCount++;
+      continue;
+    }
+
+    const documentId = existing ? existing.id : doc.id || `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const now = new Date().toISOString();
+
+    const newChunksRaw = chunkText(doc.extractedText, {
+      maxLength: 900,
+      overlap: 150
+    });
+
+    const embeddedChunks = [];
+    for (let i = 0; i < newChunksRaw.length; i++) {
+      const text = newChunksRaw[i];
+      const embedding = await generateEmbedding(text);
+      embeddedChunks.push({
+        id: `${documentId}-${i}`,
+        documentId,
+        documentTitle: doc.fileName,
+        documentUrl: doc.localUrl,
+        text,
+        embedding
       });
+    }
 
-      for (let i = 0; i < newChunksRaw.length; i++) {
-        const text = newChunksRaw[i];
-        const embedding = await generateEmbedding(text);
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      if (existing) {
+        // Update
+        await connection.query("DELETE FROM document_chunks WHERE documentId = ?", [documentId]);
         
-        const chunk = {
-          id: `${doc.id}-${i}`,
-          documentId: doc.id,
-          documentTitle: doc.fileName,
-          documentUrl: doc.localUrl,
-          text,
-          embedding
-        };
+        await connection.query(
+          `UPDATE documents SET 
+            title = ?, originalName = ?, mimetype = ?, url = ?, 
+            sourceUrl = ?, localUrl = ?, totalChunks = ?, textLength = ?, 
+            contentHash = ?, updatedAt = ?
+           WHERE id = ?`,
+          [
+            doc.title, doc.fileName, doc.mimetype, doc.localUrl, 
+            doc.sourceUrl, doc.localUrl, embeddedChunks.length, doc.extractedText.length, 
+            contentHash, now, documentId
+          ]
+        );
+        updatedCount++;
+      } else {
+        // Insert
+        await connection.query(
+          `INSERT INTO documents (
+            id, title, fileName, originalName, mimetype, url, 
+            sourceUrl, localUrl, totalChunks, textLength, contentHash, generatedBy, uploadedAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            documentId, doc.title, doc.fileName, doc.fileName, doc.mimetype, doc.localUrl,
+            doc.sourceUrl, doc.localUrl, embeddedChunks.length, doc.extractedText.length, contentHash, doc.generatedBy || "scrapedDatasetGenerator", now, now
+          ]
+        );
+        addedCount++;
+      }
 
-        chunks.push(chunk);
+      // Insert chunks
+      for (const chunk of embeddedChunks) {
+        await connection.query(
+          `INSERT INTO document_chunks (
+            id, documentId, chunkIndex, documentTitle, documentUrl, text, embedding, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            chunk.id, chunk.documentId, embeddedChunks.indexOf(chunk), chunk.documentTitle, chunk.documentUrl, 
+            chunk.text, JSON.stringify(chunk.embedding), now
+          ]
+        );
+      }
+
+      await connection.commit();
+      console.log(`Synced document to MySQL: ${doc.fileName}`);
+    } catch (e) {
+      await connection.rollback();
+      console.error(`Failed to sync document ${doc.fileName}:`, e);
+    } finally {
+      connection.release();
+    }
+  }
+
+  // Remove orphaned documents from DB that were originally from dataset but are no longer in scrapedDataset.json
+  const scrapedFileNames = new Set(scrapedDocs.map(d => d.fileName));
+  let removedCount = 0;
+  for (const existing of existingDocs) {
+    if (existing.fileName.endsWith(".pdf") || existing.fileName.endsWith(".docx") || existing.fileName.endsWith(".xlsx")) {
+      // Check if it's managed by scraper (has localUrl starting with /dataset/)
+      const [details]: any = await pool.query("SELECT localUrl FROM documents WHERE id = ?", [existing.id]);
+      if (details[0]?.localUrl?.startsWith("/dataset/") && !scrapedFileNames.has(existing.fileName)) {
+        await deleteDocumentById(existing.id);
+        removedCount++;
+        console.log(`Removed orphaned document from MySQL: ${existing.fileName}`);
       }
     }
   }
 
-  // Filter out chunks that do not match any scraped document (e.g. deleted dataset files)
-  const validChunks = chunks.filter(c => {
-    const isDocChunk = scrapedDocs.some(d => d.id === c.documentId || d.fileName === c.documentTitle || d.localUrl === c.documentUrl);
-    // If it has documentTitle but it's not in scrapedDocs, we filter it out (unless it's from manual file uploads in SQL database)
-    // Actually, manual uploaded files are in SQL documents table. How to check them?
-    // In ssc-chatbot, let's keep all chunks whose documentId matches either scrapedDocs OR an existing SQL document.
-    // Or simpler: if it has an id/documentTitle matching a deleted scrapedDoc, discard it.
-    // Let's filter: if it was a scraped dataset (localUrl begins with /dataset/), and is not in scrapedDocs, remove it!
-    const isDatasetFile = c.documentUrl?.startsWith("/dataset/");
-    if (isDatasetFile) {
-      return scrapedDocs.some(d => d.fileName === c.documentTitle || d.localUrl === c.documentUrl);
-    }
-    return true;
-  });
-
-  const removedChunksCount = chunks.length - validChunks.length;
-
-  if (missingCount > 0 || removedChunksCount > 0) {
-    fs.writeFileSync(CHUNKS_PATH, JSON.stringify(validChunks, null, 2));
-    console.log(`Synced: added ${missingCount} missing documents, removed ${removedChunksCount} orphaned chunks.`);
-    // Mutate the original reference for the caller count
-    chunks.length = 0;
-    chunks.push(...validChunks);
-  } else {
-    console.log("All scraped documents are already chunked and no orphaned chunks found.");
-  }
+  // Finally export cache
+  await syncDocumentChunksJsonFromDatabase();
 
   return {
     scrapedCount: scrapedDocs.length,
-    startingChunksCount,
-    endingChunksCount: chunks.length,
-    missingDocumentsFixed: missingCount
+    addedToDb: addedCount,
+    updatedInDb: updatedCount,
+    skippedUnchanged: skippedCount,
+    removedOrphans: removedCount,
   };
 }
 
 async function main() {
   if (require.main === module) {
-    console.log("Starting sync...");
+    console.log("Starting sync to MySQL...");
     const result = await syncScrapedDocumentsToChunks();
     console.log("Sync Result:", result);
+    process.exit(0);
   }
 }
 
-main().catch(console.error);
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

@@ -48,3 +48,10 @@ backend/uploads
 *.njsproj
 *.sln
 *.sw?
+
+# Tarballs
+*.tgz
+
+# Test scripts
+testCRUD.js
+auditData.js

@@ -17,7 +17,7 @@ import {
   findMatchingImportantLinks,
   TUGAS_AKHIR_PORTAL_URL,
   isTugasAkhirPortalRequest,
-} from "../utils/sourceUrlResolver1";
+} from "../utils/sourceUrlResolver";
 import { normalizeQuery } from "../utils/textNormalizer";
 
 type ChatMessage = {
@@ -339,7 +339,9 @@ export async function sendChatMessage(req: Request, res: Response) {
         "jadwal", "format", "pedoman", "revisi", "nilai", "ipk", "pembimbing", "penguji",
         "mahasiswa", "surat", "aktif", "pengantar", "toss", "sk", "sks",
         "kelulusan", "cumlaude", "summa", "pendaftaran", "persyaratan", "dokumen", "administrasi", "layanan",
-        "link", "tautan", "linktree", "form", "template", "panduan"
+        "link", "tautan", "linktree", "form", "template", "panduan",
+        "kontak", "email", "nomor", "whatsapp", "wa", "puti", "it", "layanan it",
+        "toss", "skpi", "tak", "ticket", "tiket", "e-ticket", "format pesan", "contoh pesan", "kronologi"
       ];
       return domainKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(text));
     };
@@ -490,8 +492,84 @@ ATURAN:
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
+    const isMessageFormatQuery = 
+      (normalizedMessage.includes("format") && (normalizedMessage.includes("pesan") || normalizedMessage.includes("email"))) ||
+      (normalizedMessage.includes("contoh") && (normalizedMessage.includes("pesan") || normalizedMessage.includes("email") || normalizedMessage.includes("kronologi"))) ||
+      (normalizedMessage.includes("cara") && normalizedMessage.includes("menghubungi")) ||
+      normalizedMessage.includes("alur menghubungi") ||
+      normalizedMessage.includes("template pesan");
+
+    const isSSCContactQuery = /^(email|kontak|nomor wa|nomor whatsapp|wa) ssc( surabaya)?$/i.test(normalizedMessage);
+    const isPUTIContactQuery = /^(kontak|nomor|tiket) (puti|it|layanan it)( telkom university)?$/i.test(normalizedMessage) || normalizedMessage === "layanan it telkom university";
+    const isTOSSContactQuery = /^(kontak|link) toss$/i.test(normalizedMessage) || normalizedMessage.includes("toss.telkomuniversity.ac.id");
+    const isTAKSKPIContactQuery = /^(nomor|kontak) (tak|skpi)$/i.test(normalizedMessage);
+
+    if (isSSCContactQuery) {
+      const answer = "Email SSC Telkom University Surabaya adalah ssc@ittelkom-sby.ac.id. Nomor WhatsApp SSC Surabaya adalah 085179793597.";
+      const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
+      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
+    }
+
+    if (isPUTIContactQuery) {
+      const answer = "Untuk layanan PuTI (Layanan IT), Anda dapat menghubungi WhatsApp 6285179793597 atau melalui E-Ticket di satu.telkomuniversity.ac.id.";
+      const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
+      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
+    }
+
+    if (isTOSSContactQuery) {
+      const answer = "Layanan TOSS dapat diakses melalui linktr.ee/toss.telu atau website resmi toss.telkomuniversity.ac.id.";
+      const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
+      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
+    }
+
+    if (isTAKSKPIContactQuery) {
+      const answer = "Untuk layanan TAK dan SKPI, Anda dapat menghubungi nomor WhatsApp 6281323233955.";
+      const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
+      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
+    }
+
+    if (isMessageFormatQuery) {
+      const answer = `Gunakan format berikut saat menghubungi SSC:
+
+Subjek: Permohonan Bantuan [Jenis Kendala] - [Nama] - [NIM]
+
+Assalamualaikum/selamat pagi Kak,
+
+Saya ingin meminta bantuan terkait [jelaskan jenis kendala].
+Berikut data saya:
+
+Nama: [Nama lengkap]
+NIM: [NIM]
+Program studi: [Program studi]
+Kampus/Fakultas: [Kampus/Fakultas]
+Nomor WhatsApp aktif: [Nomor]
+
+Kronologi singkat:
+[Isi kronologi 2–4 kalimat.
+Jelaskan sejak kapan terjadi,
+apa yang sudah dicoba,
+dan hasil yang muncul.]
+
+Bukti pendukung:
+[Sebutkan lampiran,
+misalnya screenshot,
+bukti pembayaran,
+atau dokumen terkait.]
+
+Mohon arahan atau tindak lanjutnya ya Kak.
+
+Terima kasih.`;
+      const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
+      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
+    }
+
     // 4. Concurrent Intent Checks and Retrieval Rewrite (For valid domain queries)
-    const [wantsAdmin, wantsSource, retrievalQuestion] = await Promise.all([
+    let [wantsAdmin, wantsSource, retrievalQuestion] = await Promise.all([
       isAskingForAdmin(normalizedMessage),
       isAskingForSource(normalizedMessage),
       rewriteQuestionForRetrieval(normalizedMessage)

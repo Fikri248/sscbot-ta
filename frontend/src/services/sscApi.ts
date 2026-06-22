@@ -1,5 +1,5 @@
-const API_BASE_URL = "http://localhost:5000/api";
-const BACKEND_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export type ChatSource = {
   document_title?: string;
@@ -11,9 +11,11 @@ export type ChatSource = {
   score?: number;
 };
 
-function getAuthHeaders() {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 async function requestJson(url: string, options?: RequestInit) {

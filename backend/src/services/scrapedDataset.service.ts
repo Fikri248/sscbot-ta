@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { extractFileText } from "../utils/extractFileText";
-import { resolveOriginalSourceUrl } from "../utils/sourceUrlResolver1";
+import { resolveOriginalSourceUrl } from "../utils/sourceUrlResolver";
 import { chunkText } from "../utils/chunkText";
 
 const DATA_DIR = path.join(process.cwd(), "src", "data");

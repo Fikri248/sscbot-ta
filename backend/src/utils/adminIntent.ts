@@ -32,6 +32,7 @@ Jawab true jika user:
 - ingin konsultasi langsung
 
 Jawab false jika user hanya bertanya informasi biasa tentang tugas akhir.
+Jawab false jika user hanya meminta NOMOR KONTAK, EMAIL, FORMAT PESAN, CONTOH PESAN, atau menanyakan CARA menghubungi (misalnya: "kontak puti", "email ssc", "contoh pesan", "nomor wa", "kontak toss").
 Jangan beri penjelasan.
 `,
         },

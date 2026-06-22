@@ -1,10 +1,10 @@
 import { Router } from "express";
 import {
-  clearChatHistory,
-  getChatHistory,
-  sendChatMessage,
   startChatSession,
-} from "../controllers/chat1.controller";
+  sendChatMessage,
+  getChatHistory,
+  clearChatHistory,
+} from "../controllers/chat.controller";
 
 const router = Router();
 

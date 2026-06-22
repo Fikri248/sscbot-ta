@@ -18,7 +18,6 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "recharts": "^2.15.4",
-    "ssc-bot-fullstack": "file:..",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {

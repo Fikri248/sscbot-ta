@@ -6,7 +6,7 @@ import { chunkText } from "../utils/chunkText";
 import { generateEmbedding } from "./embedding.service";
 import { DocumentChunk } from "./rag.service";
 import { pool } from "../config/database";
-import { resolveOriginalSourceUrl } from "../utils/sourceUrlResolver1";
+import { resolveOriginalSourceUrl } from "../utils/sourceUrlResolver";
 
 export type DocumentRecord = {
   id: string;
