@@ -4,7 +4,7 @@ import LoginAdmin from "./components/LoginAdmin";
 import LandingPage from "./components/LandingPage";
 import Register from "./components/Register";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
-import Chatbot from "./components/Chatbot";
+import Chatbot from "./components/1Chatbot";
 import "./App.css";
 
 function App() {

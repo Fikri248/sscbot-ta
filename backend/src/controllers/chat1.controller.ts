@@ -12,12 +12,7 @@ import { getAllDocumentChunks } from "../services/document.service";
 import { isAskingForSource } from "../utils/sourceIntent";
 import { isAskingForAdmin } from "../utils/adminIntent";
 import { isChitchat } from "../utils/chitchatIntent";
-import {
-  resolveOriginalSourceUrl,
-  findMatchingImportantLinks,
-  TUGAS_AKHIR_PORTAL_URL,
-  isTugasAkhirPortalRequest,
-} from "../utils/sourceUrlResolver1";
+import { resolveOriginalSourceUrl, findMatchingImportantLinks } from "../utils/sourceUrlResolver1";
 import { normalizeQuery } from "../utils/textNormalizer";
 
 type ChatMessage = {
@@ -112,115 +107,6 @@ function saveChat(
   });
 }
 
-function isDocumentOrSourceRequest(message: string): boolean {
-  const text = message.toLowerCase();
-
-  const sourceWords = [
-    "sumber",
-    "source",
-    "referensi",
-    "rujukan",
-    "bukti",
-    "asal jawaban",
-    "dokumen",
-    "document",
-    "file",
-    "berkas",
-    "lampiran",
-    "link",
-    "tautan",
-  ];
-
-  const requestWords = [
-    "mana",
-    "minta",
-    "mintak",
-    "berikan",
-    "kasih",
-    "tampilkan",
-    "lihat",
-    "buka",
-    "kirim",
-    "ada",
-    "apa",
-  ];
-
-  return sourceWords.some((word) => text.includes(word)) &&
-    requestWords.some((word) => text.includes(word));
-}
-
-function normalizeSourceItem(src: any): { title: string; url: string | null; documentId?: string; score?: number } | null {
-  if (!src) return null;
-
-  const rawTitle =
-    src.title ||
-    src.document_title ||
-    src.documentTitle ||
-    src.file_name ||
-    src.fileName ||
-    "Dokumen sumber";
-
-  const rawUrl =
-    src.url ||
-    src.file_url ||
-    src.fileUrl ||
-    src.documentUrl ||
-    src.localUrl ||
-    null;
-
-  const title = String(rawTitle).replace(/^\d+[\.\-]+\s*/, "").trim();
-  const url = resolveOriginalSourceUrl(title, rawUrl || undefined) || rawUrl || null;
-
-  return {
-    title,
-    url,
-    documentId: src.documentId || src.document_id,
-    score: typeof src.score === "number" ? src.score : undefined,
-  };
-}
-
-function dedupeSources(sources: any[]) {
-  const map = new Map<string, { title: string; url: string | null; documentId?: string; score?: number }>();
-
-  for (const src of sources) {
-    const normalized = normalizeSourceItem(src);
-    if (!normalized) continue;
-
-    const key = `${normalized.title}__${normalized.url || ""}`;
-    if (!map.has(key)) map.set(key, normalized);
-  }
-
-  return Array.from(map.values());
-}
-
-function formatDocumentSourcesAnswer(params: {
-  sources: { title: string; url: string | null }[];
-  includeMainPortal?: boolean;
-  intro?: string;
-}) {
-  const finalSources = [...params.sources];
-
-  if (params.includeMainPortal) {
-    finalSources.unshift({
-      title: "Portal Informasi Tugas Akhir SSC Telkom University Surabaya",
-      url: TUGAS_AKHIR_PORTAL_URL,
-    });
-  }
-
-  const deduped = dedupeSources(finalSources);
-
-  let answer = params.intro || "Berikut dokumen atau link sumber yang bisa digunakan:";
-  answer += "\n\n";
-
-  deduped.forEach((source, index) => {
-    answer += `${index + 1}. ${source.title}\n`;
-    answer += source.url ? `   Link: ${source.url}\n\n` : "   Link: belum tersedia di database.\n\n";
-  });
-
-  return { answer: answer.trim(), sources: deduped };
-}
-
-
 export async function startChatSession(_req: Request, res: Response) {
   const session = createSession();
 
@@ -284,9 +170,7 @@ export async function sendChatMessage(req: Request, res: Response) {
       const phrases = [
         "mana sumbernya", "mana sumber dokumennya", "sumber dokumennya mana",
         "dari dokumen apa", "dokumen sumbernya apa", "mana link sumber itu",
-        "link sumbernya mana", "sumber link", "source", "references", "sumbernya dari mana",
-        "minta dokumennya", "dokumennya mana", "mana dokumennya", "file dokumennya mana",
-        "berikan dokumennya", "tampilkan dokumennya", "dokumen jawaban", "dokumen sumber jawaban"
+        "link sumbernya mana", "sumber link", "source", "references", "sumbernya dari mana"
       ];
       return phrases.some(p => normalizedMessage.includes(p));
     })();
@@ -306,7 +190,19 @@ export async function sendChatMessage(req: Request, res: Response) {
           return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
         }
         
-        const validSources = dedupeSources(sources);
+        const validSources: { title: string, url: string }[] = [];
+        sources.forEach((src: any) => {
+          const rawUrl = src.url || src.file_url;
+          const rawTitle = src.title || src.document_title || "";
+          const originalUrl = resolveOriginalSourceUrl(rawTitle, rawUrl);
+          if (originalUrl) {
+            const cleanTitle = rawTitle.replace(/^\d+[\.\-]+\s*/, "");
+            validSources.push({
+              title: cleanTitle,
+              url: originalUrl
+            });
+          }
+        });
 
         if (validSources.length === 0) {
           const answer = "Sumber jawaban sebelumnya ditemukan, tetapi tautan sumber belum tersedia.";
@@ -314,16 +210,19 @@ export async function sendChatMessage(req: Request, res: Response) {
           return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: false });
         }
 
-        const { answer, sources: displaySources } = formatDocumentSourcesAnswer({
-          sources: validSources,
-          includeMainPortal: isTugasAkhirPortalRequest(normalizedMessage),
-          intro: normalizedMessage.includes("link") || normalizedMessage.includes("tautan")
-            ? "Link sumber jawaban sebelumnya:"
-            : "Sumber jawaban sebelumnya berasal dari dokumen berikut:",
+        const isLinkFollowUp = normalizedMessage.includes("link");
+        let answer = isLinkFollowUp 
+          ? "Link sumber yang tersedia:\n\n" 
+          : "Sumber jawaban sebelumnya berasal dari:\n\n";
+          
+        validSources.forEach((src, idx) => {
+          answer += `${idx + 1}. ${src.title}\n   Link: ${src.url}\n\n`;
         });
-
-        saveChat(sessionId, "assistant", answer, { sources: displaySources });
-        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: displaySources, showSources: true });
+        
+        answer = answer.trim();
+        
+        saveChat(sessionId, "assistant", answer, { sources });
+        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: true });
       } else {
         const answer = "Maaf, tidak ada sumber dokumen spesifik dari percakapan sebelumnya.";
         saveChat(sessionId, "assistant", answer, { sources: [] });
@@ -512,41 +411,6 @@ ATURAN:
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
-    const wantsDocumentOrSource = isDocumentOrSourceRequest(normalizedMessage);
-
-    if (isTugasAkhirPortalRequest(normalizedMessage)) {
-      const source = {
-        title: "Portal Informasi Tugas Akhir SSC Telkom University Surabaya",
-        url: TUGAS_AKHIR_PORTAL_URL,
-      };
-      const answer = `Link portal informasi Tugas Akhir SSC dapat diakses melalui:\n${TUGAS_AKHIR_PORTAL_URL}\n\nDi portal tersebut, mahasiswa dapat melihat informasi dan dokumen terkait Tugas Akhir.`;
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
-      return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
-    }
-
-    if (wantsDocumentOrSource && !normalizedMessage.includes("sumber jawaban sebelumnya")) {
-      const searchForDocuments = await searchRelevantChunks(
-        retrievalQuestion || normalizedMessage,
-        allChunks,
-        { topK: 5, minScore: 0.12 }
-      );
-
-      const sourceCandidates = getUniqueSources(searchForDocuments);
-
-      if (sourceCandidates.length > 0) {
-        const { answer, sources } = formatDocumentSourcesAnswer({
-          sources: sourceCandidates,
-          includeMainPortal: normalizedMessage.includes("tugas akhir") || normalizedMessage.includes(" ta") || normalizedMessage === "ta",
-          intro: normalizedMessage.includes("link") || normalizedMessage.includes("tautan")
-            ? "Berikut link dokumen yang sesuai dengan pertanyaan Anda:"
-            : "Berikut dokumen sumber yang sesuai dengan pertanyaan Anda:",
-        });
-
-        saveChat(sessionId, "assistant", answer, { sources });
-        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: true });
-      }
-    }
-
     const isLinkQuery = (() => {
       const isTemplateDocumentRequest =
         normalizedMessage.includes("template") &&
@@ -577,14 +441,13 @@ ATURAN:
     if (isLinkQuery) {
       const matchedLinks = findMatchingImportantLinks(normalizedMessage);
       if (matchedLinks && matchedLinks.length > 0) {
-        const sources = matchedLinks.map((link) => ({ title: link.label, url: link.url }));
-        const { answer, sources: displaySources } = formatDocumentSourcesAnswer({
-          sources,
-          includeMainPortal: false,
-          intro: "Link sumber yang tersedia:",
+        let answer = "Link sumber yang tersedia:\n\n";
+        matchedLinks.forEach((link, idx) => {
+          answer += `${idx + 1}. ${link.label}\n   Link: ${link.url}\n\n`;
         });
-        saveChat(sessionId, "assistant", answer, { sources: displaySources });
-        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: displaySources, showSources: true });
+        answer = answer.trim();
+        saveChat(sessionId, "assistant", answer, { sources: [] });
+        return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
       }
     }
 

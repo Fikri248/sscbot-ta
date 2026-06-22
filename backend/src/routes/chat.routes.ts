@@ -4,7 +4,7 @@ import {
   getChatHistory,
   sendChatMessage,
   startChatSession,
-} from "../controllers/chat.controller";
+} from "../controllers/chat1.controller";
 
 const router = Router();
 

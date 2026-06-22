@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../config/database";
-import { chatSessions, chatMessages } from "./chat.controller";
+import { chatSessions, chatMessages } from "./chat1.controller";
 import {
   createTextDataset,
   deleteDocumentById,
