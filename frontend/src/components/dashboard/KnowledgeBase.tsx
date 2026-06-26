@@ -493,105 +493,104 @@ export function KnowledgeBase() {
         </div>
       )}
 
-      <div className="flex-1 overflow-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-muted-foreground uppercase bg-muted/50 sticky top-0">
-            <tr>
-              <th className="px-6 py-4 font-medium">Judul Dokumen</th>
-              <th className="px-6 py-4 font-medium">Nama File</th>
-              <th className="px-6 py-4 font-medium">Tipe</th>
-              <th className="px-6 py-4 font-medium">Chunks</th>
-              <th className="px-6 py-4 font-medium">Panjang Teks</th>
-              <th className="px-6 py-4 font-medium">Terakhir Update</th>
-              <th className="px-6 py-4 font-medium text-right">Aksi</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y">
-            {isLoading ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <p>Memuat dokumen knowledge base...</p>
+      <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+            <p>Memuat dokumen knowledge base...</p>
+          </div>
+        ) : documents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-muted-foreground bg-white border border-dashed rounded-xl">
+            <FileText className="w-12 h-12 text-muted-foreground/30 mb-4" />
+            <p>Belum ada dokumen di knowledge base.</p>
+            <button
+              onClick={handleUploadClick}
+              className="mt-4 text-sm text-primary hover:underline"
+            >
+              Upload dokumen pertama Anda
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {documents.map((doc) => (
+              <div 
+                key={doc.id} 
+                className="bg-white border rounded-xl p-5 hover:shadow-md transition-all flex flex-col sm:flex-row gap-4 sm:items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start sm:items-center gap-4 mb-2">
+                    <div className="p-2.5 bg-red-50 text-red-600 rounded-lg shrink-0 mt-1 sm:mt-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 
+                        className="text-base font-bold text-gray-900 truncate" 
+                        title={doc.title}
+                      >
+                        {doc.title}
+                      </h4>
+                      <p 
+                        className="text-sm text-gray-500 truncate" 
+                        title={doc.fileName}
+                      >
+                        {doc.fileName}
+                      </p>
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ) : documents.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <FileText className="w-12 h-12 text-muted-foreground/30" />
-                    <p>Belum ada dokumen di knowledge base.</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              documents.map((doc) => (
-                <tr key={doc.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 font-medium flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary/70" />
-                    {doc.title}
-                  </td>
-
-                  <td className="px-6 py-4 text-muted-foreground max-w-[260px] truncate">
-                    {doc.fileName}
-                  </td>
-
-                  <td className="px-6 py-4 text-muted-foreground">
-                    {getFileType(doc.mimetype, doc.fileName)}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  
+                  <div className="flex flex-wrap items-center gap-3 mt-3 sm:ml-14 text-sm">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700">
+                      {getFileType(doc.mimetype, doc.fileName)}
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      <Database className="w-3 h-3 mr-1" />
                       {doc.chunkCount} chunks
                     </span>
-                  </td>
-
-                  <td className="px-6 py-4 text-muted-foreground">
-                    {doc.textLength?.toLocaleString("id-ID") || 0}
-                  </td>
-
-                  <td className="px-6 py-4 text-muted-foreground">
-                    {doc.updatedAt
-                      ? new Date(doc.updatedAt).toLocaleDateString("id-ID", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
-                      : "-"}
-                  </td>
-
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setPreviewDoc(doc)}
-                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-md transition"
-                        title="Read / Detail Dokumen"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEdit(doc)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition"
-                        title="Update Dokumen"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(doc.id, doc.title)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"
-                        title="Delete Dokumen"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    <span className="text-gray-500 text-xs hidden sm:inline-block">
+                      &bull;
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      {doc.textLength?.toLocaleString("id-ID") || 0} karakter
+                    </span>
+                    <span className="text-gray-500 text-xs hidden sm:inline-block">
+                      &bull;
+                    </span>
+                    <span className="text-gray-400 text-xs">
+                      Diperbarui: {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : "-"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 sm:self-center justify-end mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                  <button
+                    onClick={() => setPreviewDoc(doc)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                    title="Detail Dokumen"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span className="sm:hidden">Detail</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenEdit(doc)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    title="Update Dokumen"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span className="sm:hidden">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(doc.id, doc.title)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    title="Hapus Dokumen"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="sm:hidden">Hapus</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
