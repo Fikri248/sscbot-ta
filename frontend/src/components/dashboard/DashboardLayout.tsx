@@ -81,30 +81,30 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
         />
         
         <main className="flex-1 overflow-auto bg-muted/20 p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl h-full">
+          <div className="mx-auto max-w-7xl">
             {activeTab === "overview" && <Overview />}
             {activeTab === "documents" && (
-              <div className="h-full">
+              <div>
                 <KnowledgeBase />
               </div>
             )}
             {activeTab === "chunks" && (
-              <div className="h-full">
+              <div>
                 <ChunksViewer />
               </div>
             )}
             {activeTab === "scraped-data" && (
-              <div className="h-full">
+              <div>
                 <ScrapedDataViewer />
               </div>
             )}
             {activeTab === "query-tester" && (
-              <div className="h-full">
+              <div>
                 <QueryTester />
               </div>
             )}
             {["sync"].includes(activeTab) && (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground">
                 <div className="text-center space-y-2">
                   <h2 className="text-2xl font-semibold tracking-tight text-foreground">Sync & Maintenance</h2>
                   <p>Fitur sinkronisasi saat ini tersedia melalui tombol di bagian Documents.</p>

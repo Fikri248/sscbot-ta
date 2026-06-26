@@ -271,8 +271,8 @@ export function KnowledgeBase() {
   }, [])
 
   return (
-    <div className="flex flex-col h-full bg-card rounded-xl border shadow-sm">
-      <div className="p-6 border-b flex items-center justify-between">
+    <div className="flex flex-col bg-card rounded-xl border shadow-sm mb-8">
+      <div className="p-4 md:p-5 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Knowledge Base</h2>
           <p className="text-sm text-muted-foreground">
@@ -320,8 +320,8 @@ export function KnowledgeBase() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 border-b">
-        <div className="rounded-lg border p-4 bg-muted/20">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 md:p-5 border-b">
+        <div className="rounded-lg border p-3 bg-muted/20">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Database className="w-4 h-4" />
             Total Dokumen
@@ -329,21 +329,21 @@ export function KnowledgeBase() {
           <p className="text-2xl font-bold mt-2">{documents.length}</p>
         </div>
 
-        <div className="rounded-lg border p-4 bg-muted/20">
+        <div className="rounded-lg border p-3 bg-muted/20">
           <div className="text-sm text-muted-foreground">Total Chunks</div>
           <p className="text-2xl font-bold mt-2">
             {syncStatus?.totalChunks ?? documents.reduce((total, doc) => total + doc.chunkCount, 0)}
           </p>
         </div>
 
-        <div className="rounded-lg border p-4 bg-muted/20">
+        <div className="rounded-lg border p-3 bg-muted/20">
           <div className="text-sm text-muted-foreground">Status Sync</div>
           <p className="text-sm font-medium mt-2">
             {syncStatus?.message || "Belum ada status"}
           </p>
         </div>
 
-        <div className="rounded-lg border p-4 bg-muted/20">
+        <div className="rounded-lg border p-3 bg-muted/20">
           <div className="text-sm text-muted-foreground">Terakhir Sync</div>
           <p className="text-sm font-medium mt-2">
             {syncStatus?.lastSyncAt
@@ -493,7 +493,7 @@ export function KnowledgeBase() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
+      <div className="p-4 md:p-5 bg-gray-50/50 rounded-b-xl">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
@@ -524,13 +524,13 @@ export function KnowledgeBase() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 
-                        className="text-base font-bold text-gray-900 truncate" 
+                        className="text-lg font-bold text-gray-900 break-words line-clamp-2" 
                         title={doc.title}
                       >
                         {doc.title}
                       </h4>
                       <p 
-                        className="text-sm text-gray-500 truncate" 
+                        className="text-sm text-gray-500 break-all line-clamp-2 mt-0.5" 
                         title={doc.fileName}
                       >
                         {doc.fileName}
