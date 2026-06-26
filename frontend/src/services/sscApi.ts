@@ -1,5 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+export const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export type ChatSource = {
   document_title?: string;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw, Upload, Edit3, Save, X, Eye } from "lucide-react"
+import { API_BASE_URL, BACKEND_BASE_URL } from "@/services/sscApi"
 
 type DocumentItem = {
   id: string
@@ -42,7 +43,7 @@ export function KnowledgeBase() {
   const fetchDocuments = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch("http://localhost:5000/api/admin/datasets", { headers: authHeaders() })
+      const response = await fetch(`${API_BASE_URL}/admin/datasets`, { headers: authHeaders() })
       const result = await response.json()
 
       if (result.status === "success") {
@@ -57,7 +58,7 @@ export function KnowledgeBase() {
 
   const fetchSyncStatus = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/admin/sync/status", { headers: authHeaders() })
+      const response = await fetch(`${API_BASE_URL}/admin/sync/status`, { headers: authHeaders() })
       const result = await response.json()
 
       if (result.status === "success") {
@@ -73,7 +74,7 @@ export function KnowledgeBase() {
 
     setIsSyncing(true)
     try {
-      const response = await fetch("http://localhost:5000/api/admin/sync", {
+      const response = await fetch(`${API_BASE_URL}/admin/sync`, {
         method: "POST",
         headers: {
           ...authHeaders(),
@@ -113,7 +114,7 @@ export function KnowledgeBase() {
     formData.append("title", file.name)
 
     try {
-      const response = await fetch("http://localhost:5000/api/documents/upload", {
+      const response = await fetch(`${API_BASE_URL}/documents/upload`, {
         method: "POST",
         headers: authHeaders(),
         body: formData,
@@ -176,7 +177,7 @@ export function KnowledgeBase() {
         formData.append("sourceUrl", editSourceUrl.trim())
         formData.append("file", replacementFile)
 
-        response = await fetch(`http://localhost:5000/api/documents/${editingDoc.id}`, {
+        response = await fetch(`${API_BASE_URL}/documents/${editingDoc.id}`, {
           method: "PUT",
           headers: authHeaders(),
           body: formData,
@@ -195,7 +196,7 @@ export function KnowledgeBase() {
           payload.extractedText = editText.trim()
         }
 
-        response = await fetch(`http://localhost:5000/api/admin/datasets/${editingDoc.id}`, {
+        response = await fetch(`${API_BASE_URL}/admin/datasets/${editingDoc.id}`, {
           method: "PUT",
           headers: {
             ...authHeaders(),
@@ -233,7 +234,7 @@ export function KnowledgeBase() {
     if (!window.confirm(`Yakin ingin menghapus dataset "${title}"?`)) return
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/datasets/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/datasets/${id}`, {
         method: "DELETE",
         headers: authHeaders(),
       })
@@ -473,7 +474,7 @@ export function KnowledgeBase() {
                 {previewDoc.localUrl && (
                   <p>
                     <span className="font-medium text-foreground">File URL:</span>{" "}
-                    <a className="text-blue-600 underline" href={`http://localhost:5000${previewDoc.localUrl}`} target="_blank" rel="noreferrer">
+                    <a className="text-blue-600 underline" href={`${BACKEND_BASE_URL}${previewDoc.localUrl}`} target="_blank" rel="noreferrer">
                       Buka file
                     </a>
                   </p>

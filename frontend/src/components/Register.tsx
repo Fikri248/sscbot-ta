@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { AlertModal, type AlertType } from "./AlertModal";
+import { API_BASE_URL } from "@/services/sscApi";
 
 type RegisterProps = {
   onShowLogin: () => void;
@@ -45,7 +46,7 @@ function Register({ onShowLogin, onLogin }: RegisterProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: username, email: username, password, role: "user" }),
@@ -55,7 +56,7 @@ function Register({ onShowLogin, onLogin }: RegisterProps) {
       if (data.status === "success" || data.status === 201) {
         // Auto-login after register
         try {
-          const loginResponse = await fetch("http://localhost:5000/api/auth/login", {
+          const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: username, password }),

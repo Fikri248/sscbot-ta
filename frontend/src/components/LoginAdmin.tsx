@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { AlertModal, type AlertType } from "./AlertModal";
+import { API_BASE_URL } from "@/services/sscApi";
 
 type LoginAdminProps = {
   onLogin: (username: string, role: string) => void;
@@ -31,7 +32,7 @@ function LoginAdmin({ onLogin, onBack }: LoginAdminProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: username, password }),
