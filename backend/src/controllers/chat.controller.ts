@@ -527,13 +527,31 @@ ATURAN:
       normalizedMessage.includes("alur menghubungi") ||
       normalizedMessage.includes("template pesan");
 
-    const isSSCContactQuery = /^(email|kontak|nomor wa|nomor whatsapp|wa) ssc( surabaya)?$/i.test(normalizedMessage);
+    const isSSCContactQuery = 
+      /^(email|kontak|nomor wa|nomor whatsapp|whatsapp|wa|hubungi|cara menghubungi|cara kontak|alamat kontak) ssc( surabaya)?$/i.test(normalizedMessage) ||
+      normalizedMessage === "ssc surabaya";
     const isPUTIContactQuery = /^(kontak|nomor|tiket) (puti|it|layanan it)( telkom university)?$/i.test(normalizedMessage) || normalizedMessage === "layanan it telkom university";
     const isTOSSContactQuery = /^(kontak|link) toss$/i.test(normalizedMessage) || normalizedMessage.includes("toss.telkomuniversity.ac.id");
-    const isTAKSKPIContactQuery = /^(nomor|kontak) (tak|skpi)$/i.test(normalizedMessage);
+    const isTAKSKPIContactQuery = /^(nomor|kontak) (tak|skpi|tak skpi|skpi tak)$/i.test(normalizedMessage) || normalizedMessage.includes("nomor tak") || normalizedMessage.includes("nomor skpi");
 
     if (isSSCContactQuery) {
-      const answer = "Email SSC Telkom University Surabaya adalah ssc@ittelkom-sby.ac.id. Nomor WhatsApp SSC Surabaya adalah 085179793597.";
+      const answer = `Untuk menghubungi SSC Telkom University Surabaya, Anda dapat menggunakan beberapa cara berikut:
+
+1. Layanan offline:
+Datang ke SSC, ambil nomor antrean, lalu sampaikan kebutuhan kepada operator.
+
+2. Layanan online:
+Kirim email ke ssc@ittelkom-sby.ac.id atau hubungi WhatsApp SSC di 085179793597.
+
+Sebelum menghubungi SSC, siapkan identitas dan bukti yang diperlukan, seperti NIM, nama, program studi, kontak aktif, serta kronologi atau dokumen pendukung.
+
+Jika mengirim permintaan melalui email atau WhatsApp, gunakan subjek yang jelas, tuliskan kronologi singkat, dan jelaskan bantuan yang diminta. Hindari mengirim permintaan yang sama ke terlalu banyak kanal sekaligus, kecuali diarahkan oleh petugas.
+
+Kontak layanan terkait:
+- TAK/SKPI: 6281323233955
+- TOSS: linktr.ee/toss.telu atau toss.telkomuniversity.ac.id
+
+Jika belum ada respons setelah waktu layanan yang wajar, lakukan follow-up secara sopan dengan menyertakan ringkasan permintaan sebelumnya.`;
       const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
       await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });

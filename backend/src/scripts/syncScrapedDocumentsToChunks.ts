@@ -19,7 +19,7 @@ export async function syncScrapedDocumentsToChunks() {
   // Test DB Connection
   await pool.query("SELECT 1");
   
-  const [existingDocs]: any = await pool.query("SELECT id, fileName, contentHash FROM documents WHERE deletedAt IS NULL");
+  const [existingDocs]: any = await pool.query("SELECT id, fileName, contentHash, deletedAt, totalChunks FROM documents");
   const existingDocsMap = new Map<string, any>(existingDocs.map((d: any) => [d.fileName, d]));
 
   let addedCount = 0;
@@ -30,7 +30,7 @@ export async function syncScrapedDocumentsToChunks() {
     const existing = existingDocsMap.get(doc.fileName);
     const contentHash = doc.contentHash || createContentHash(doc.extractedText);
 
-    if (existing && existing.contentHash === contentHash) {
+    if (existing && existing.contentHash === contentHash && !existing.deletedAt && existing.totalChunks > 0) {
       skippedCount++;
       continue;
     }
@@ -69,7 +69,7 @@ export async function syncScrapedDocumentsToChunks() {
           `UPDATE documents SET 
             title = ?, originalName = ?, mimetype = ?, url = ?, 
             sourceUrl = ?, localUrl = ?, totalChunks = ?, textLength = ?, 
-            contentHash = ?, updatedAt = ?
+            contentHash = ?, updatedAt = ?, deletedAt = NULL
            WHERE id = ?`,
           [
             doc.title, doc.fileName, doc.mimetype, doc.localUrl, 
