@@ -66,6 +66,29 @@ function getSessionIdFromBody(body: unknown): string {
   return "default-session";
 }
 
+function isSSCContactQuery(message: string): boolean {
+  const m = message
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[^\w\s@./:-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const mentionsSSC = /\bssc\b/.test(m);
+  if (!mentionsSSC) return false;
+
+  const asksTemplate =
+    /\b(template|format|contoh|draft|susun|buatkan)\b/.test(m) &&
+    /\b(pesan|email|wa|whatsapp|kronologi)\b/.test(m);
+
+  if (asksTemplate) return false;
+
+  return (
+    /\b(email|kontak|contact|hubungi|menghubungi|wa|whatsapp|nomor|no|no wa|alamat kontak)\b/.test(m) ||
+    /^ssc surabaya$/.test(m)
+  );
+}
+
 async function ensureChatSession(sessionId: string, title?: string, userId?: string) {
   const id = sessionId || `session-${Date.now()}`;
   const now = new Date().toISOString();
@@ -522,19 +545,17 @@ ATURAN:
 
     const isMessageFormatQuery = 
       (normalizedMessage.includes("format") && (normalizedMessage.includes("pesan") || normalizedMessage.includes("email"))) ||
-      (normalizedMessage.includes("contoh") && (normalizedMessage.includes("pesan") || normalizedMessage.includes("email") || normalizedMessage.includes("kronologi"))) ||
-      (normalizedMessage.includes("cara") && normalizedMessage.includes("menghubungi")) ||
-      normalizedMessage.includes("alur menghubungi") ||
-      normalizedMessage.includes("template pesan");
+      (normalizedMessage.includes("contoh") && (normalizedMessage.includes("pesan") || normalizedMessage.includes("email") || normalizedMessage.includes("kronologi") || normalizedMessage.includes("whatsapp") || normalizedMessage.includes("wa"))) ||
+      (normalizedMessage.includes("template") && (normalizedMessage.includes("pesan") || normalizedMessage.includes("email") || normalizedMessage.includes("whatsapp") || normalizedMessage.includes("wa"))) ||
+      (normalizedMessage.includes("cara") && normalizedMessage.includes("menghubungi") && !isSSCContactQuery(normalizedMessage)) ||
+      normalizedMessage.includes("alur menghubungi");
 
-    const isSSCContactQuery = 
-      /^(email|kontak|nomor wa|nomor whatsapp|whatsapp|wa|hubungi|cara menghubungi|cara kontak|alamat kontak) ssc( surabaya)?$/i.test(normalizedMessage) ||
-      normalizedMessage === "ssc surabaya";
+    const isSSCContact = isSSCContactQuery(normalizedMessage);
     const isPUTIContactQuery = /^(kontak|nomor|tiket) (puti|it|layanan it)( telkom university)?$/i.test(normalizedMessage) || normalizedMessage === "layanan it telkom university";
     const isTOSSContactQuery = /^(kontak|link) toss$/i.test(normalizedMessage) || normalizedMessage.includes("toss.telkomuniversity.ac.id");
     const isTAKSKPIContactQuery = /^(nomor|kontak) (tak|skpi|tak skpi|skpi tak)$/i.test(normalizedMessage) || normalizedMessage.includes("nomor tak") || normalizedMessage.includes("nomor skpi");
 
-    if (isSSCContactQuery) {
+    if (isSSCContact) {
       const answer = `Untuk menghubungi SSC Telkom University Surabaya, Anda dapat menggunakan beberapa cara berikut:
 
 1. Layanan offline:
