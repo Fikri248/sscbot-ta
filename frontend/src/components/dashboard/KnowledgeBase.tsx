@@ -261,9 +261,7 @@ export function KnowledgeBase() {
     const lowerName = (fileName || "").toLowerCase()
     if (mimetype.includes("pdf") || lowerName.endsWith(".pdf")) return "PDF"
     if (mimetype.includes("word") || lowerName.endsWith(".docx")) return "DOCX"
-    if (mimetype.includes("msword") || lowerName.endsWith(".doc")) return "DOC"
     if (mimetype.includes("sheet") || lowerName.endsWith(".xlsx")) return "XLSX"
-    if (mimetype.includes("excel") || lowerName.endsWith(".xls")) return "XLS"
     return "TXT"
   }
 
@@ -278,7 +276,7 @@ export function KnowledgeBase() {
         <div>
           <h2 className="text-lg font-semibold">Knowledge Base</h2>
           <p className="text-sm text-muted-foreground">
-            CRUD per dokumen PDF, DOC, DOCX, XLS, XLSX, dan TXT. Semua tersimpan ke Aiven dan dipakai chatbot.
+            CRUD per dokumen PDF, DOCX, XLSX, dan TXT. Semua tersimpan ke Aiven dan dipakai chatbot.
           </p>
         </div>
 
@@ -307,7 +305,7 @@ export function KnowledgeBase() {
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+            accept=".pdf,.docx,.xlsx,.txt"
             onChange={handleFileChange}
           />
 
@@ -364,7 +362,7 @@ export function KnowledgeBase() {
                 Update Dokumen
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Untuk mengubah isi dokumen PDF/DOC/DOCX/XLS/XLSX/TXT, pilih file pengganti. Sistem akan menghapus chunk lama dan membuat chunk baru.
+                Untuk mengubah isi dokumen PDF/DOCX/XLSX/TXT, pilih file pengganti. Sistem akan menghapus chunk lama dan membuat chunk baru.
               </p>
             </div>
             <button
@@ -404,7 +402,7 @@ export function KnowledgeBase() {
               <input
                 ref={replaceFileInputRef}
                 type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                accept=".pdf,.docx,.xlsx,.txt"
                 onChange={(event) => setReplacementFile(event.target.files?.[0] || null)}
                 className="mt-1 w-full px-3 py-2 border rounded-md bg-background"
               />

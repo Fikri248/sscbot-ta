@@ -10,14 +10,12 @@ if (!fs.existsSync(uploadDir)) {
 
 const allowedMimeTypes = [
   "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/plain",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+  "text/plain", // .txt
 ];
 
-const allowedExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt"];
+const allowedExtensions = [".pdf", ".docx", ".xlsx", ".txt"];
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -46,7 +44,7 @@ export const upload = multer({
     } else {
       cb(
         new Error(
-          "Format file tidak didukung. Gunakan file PDF, DOC, DOCX, XLS, XLSX, atau TXT."
+          "Format file tidak didukung. Gunakan file PDF, DOCX, XLSX, atau TXT. (File .doc lama belum didukung)."
         )
       );
     }

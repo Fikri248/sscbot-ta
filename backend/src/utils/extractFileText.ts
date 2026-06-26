@@ -46,7 +46,7 @@ export async function extractFileText(
   }
 
   if (mimetype === "application/msword") {
-    throw new Error("DOC extraction is not supported yet");
+    throw new Error("Format file .doc lama belum didukung. Silakan konversi ke .docx.");
   }
 
   if (
@@ -56,5 +56,5 @@ export async function extractFileText(
     return extractXlsxText(filePath);
   }
 
-  throw new Error("Format file tidak didukung. Gunakan PDF, DOC, DOCX, XLSX, atau TXT.");
+  throw new Error("Format file tidak didukung. Gunakan PDF, DOCX, XLSX, atau TXT.");
 }

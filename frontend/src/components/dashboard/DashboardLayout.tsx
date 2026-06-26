@@ -2,8 +2,11 @@ import { useState, useEffect } from "react"
 import { AppSidebar } from "./AppSidebar"
 import { DashboardHeader } from "./DashboardHeader"
 import { Overview } from "./Overview"
-import { AdminConversations } from "./AdminConversations"
+
 import { KnowledgeBase } from "./KnowledgeBase"
+import { ChunksViewer } from "./ChunksViewer"
+import { ScrapedDataViewer } from "./ScrapedDataViewer"
+import { QueryTester } from "./QueryTester"
 import { Loader2 } from "lucide-react"
 
 type DashboardLayoutProps = {
@@ -27,13 +30,11 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
   const getPageTitle = () => {
     switch (activeTab) {
       case "overview": return "Overview"
-      case "conversations": return "Conversations"
-      case "knowledge": return "Knowledge Base"
-      case "users": return "User Management"
-      case "analytics": return "Analytics"
-      case "models": return "AI Models"
-      case "moderation": return "Moderation"
-      case "settings": return "Settings"
+      case "documents": return "Documents"
+      case "chunks": return "Chunks Viewer"
+      case "scraped-data": return "Scraped Data"
+      case "query-tester": return "RAG Query Tester"
+      case "sync": return "Sync & Maintenance"
       default: return "Dashboard"
     }
   }
@@ -82,21 +83,31 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
         <main className="flex-1 overflow-auto bg-muted/20 p-4 md:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl h-full">
             {activeTab === "overview" && <Overview />}
-            {activeTab === "conversations" && (
-              <div className="h-full bg-card rounded-xl border shadow-sm overflow-hidden flex flex-col">
-                <AdminConversations />
-              </div>
-            )}
-            {activeTab === "knowledge" && (
+            {activeTab === "documents" && (
               <div className="h-full">
                 <KnowledgeBase />
               </div>
             )}
-            {["users", "analytics", "models", "moderation", "settings"].includes(activeTab) && (
+            {activeTab === "chunks" && (
+              <div className="h-full">
+                <ChunksViewer />
+              </div>
+            )}
+            {activeTab === "scraped-data" && (
+              <div className="h-full">
+                <ScrapedDataViewer />
+              </div>
+            )}
+            {activeTab === "query-tester" && (
+              <div className="h-full">
+                <QueryTester />
+              </div>
+            )}
+            {["sync"].includes(activeTab) && (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">Modul Dalam Pengembangan</h2>
-                  <p>Halaman {getPageTitle()} akan segera hadir pada update berikutnya.</p>
+                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">Sync & Maintenance</h2>
+                  <p>Fitur sinkronisasi saat ini tersedia melalui tombol di bagian Documents.</p>
                 </div>
               </div>
             )}

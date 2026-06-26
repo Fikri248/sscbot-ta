@@ -1,13 +1,11 @@
 import { 
   LayoutDashboard, 
-  MessageSquare, 
-  Users, 
-  BarChart3, 
-  Cpu, 
-  ShieldAlert, 
-  Settings,
-  LogOut,
-  Library
+  FileText,
+  Database,
+  Globe,
+  Search,
+  RefreshCcw,
+  LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,17 +20,14 @@ type AppSidebarProps = {
 export function AppSidebar({ activeTab, onTabChange, onLogout, username, isCollapsed }: AppSidebarProps) {
   const workspaceItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "conversations", label: "Conversations", icon: MessageSquare },
-    { id: "knowledge", label: "Knowledge Base", icon: Library },
-    { id: "users", label: "Users", icon: Users },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "documents", label: "Documents", icon: FileText },
+    { id: "chunks", label: "Chunks", icon: Database },
+    { id: "scraped-data", label: "Scraped Data", icon: Globe },
+    { id: "query-tester", label: "Query Tester", icon: Search },
+    { id: "sync", label: "Sync", icon: RefreshCcw },
   ]
 
-  const systemItems = [
-    { id: "models", label: "AI Models", icon: Cpu },
-    { id: "moderation", label: "Moderation", icon: ShieldAlert },
-    { id: "settings", label: "Settings", icon: Settings },
-  ]
+  const systemItems: any[] = []
 
   return (
     <div className={cn(
@@ -78,27 +73,29 @@ export function AppSidebar({ activeTab, onTabChange, onLogout, username, isColla
           </div>
         </div>
 
-        <div>
-          {!isCollapsed && <h3 className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">System</h3>}
-          <div className="space-y-1">
-            {systemItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
-                  activeTab === item.id 
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-                    : "hover:bg-sidebar-accent/50 text-sidebar-foreground/80"
-                )}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <item.icon className="w-4 h-4 shrink-0" />
-                {!isCollapsed && <span>{item.label}</span>}
-              </button>
-            ))}
+        {systemItems.length > 0 && (
+          <div>
+            {!isCollapsed && <h3 className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">System</h3>}
+            <div className="space-y-1">
+              {systemItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
+                    activeTab === item.id 
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                      : "hover:bg-sidebar-accent/50 text-sidebar-foreground/80"
+                  )}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {!isCollapsed && <span>{item.label}</span>}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Footer */}

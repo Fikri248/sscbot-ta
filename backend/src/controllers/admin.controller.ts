@@ -9,6 +9,9 @@ import {
   importDatasetFromFolder,
   updateTextDataset,
 } from "../services/document.service";
+import { searchRelevantChunks } from "../services/rag.service";
+import fs from "fs";
+import path from "path";
 
 export const getDashboardStats = async (_req: Request, res: Response) => {
   try {
@@ -339,4 +342,82 @@ export const getSyncStatus = async (_req: Request, res: Response) => {
   }
 
   return res.json({ status: "success", data: syncStatus });
+};
+
+export const getDocumentChunksById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const [rows]: any = await pool.query(
+      `
+        SELECT c.documentId, c.documentTitle, c.chunkIndex, c.text, c.documentUrl, d.sourceUrl 
+        FROM document_chunks c
+        INNER JOIN documents d ON d.id = c.documentId
+        WHERE c.documentId = ? AND d.deletedAt IS NULL
+        ORDER BY c.chunkIndex ASC
+      `,
+      [id]
+    );
+
+    return res.json({ status: "success", data: rows });
+  } catch (error) {
+    console.error("Failed to fetch chunks:", error);
+    return res.status(500).json({ status: "error", message: "Gagal mengambil chunks" });
+  }
+};
+
+export const getScrapedData = async (_req: Request, res: Response) => {
+  try {
+    const scrapedPath = path.join(process.cwd(), "src", "data", "scrapedDataset.json");
+    if (!fs.existsSync(scrapedPath)) {
+      return res.json({ status: "success", data: [], message: "scrapedDataset.json tidak ditemukan." });
+    }
+    const raw = fs.readFileSync(scrapedPath, "utf-8");
+    const data = raw.trim() ? JSON.parse(raw) : [];
+    
+    // Format to indicate this is a cache/legacy dataset
+    const formattedData = data.map((item: any) => ({
+      ...item,
+      isLegacyCache: true,
+      textLength: item.text?.length || 0,
+      totalChunks: item.chunks?.length || 0,
+    }));
+
+    return res.json({ status: "success", data: formattedData });
+  } catch (error) {
+    console.error("Failed to read scraped data:", error);
+    return res.status(500).json({ status: "error", message: "Gagal mengambil scraped data cache" });
+  }
+};
+
+export const queryTestRag = async (req: Request, res: Response) => {
+  try {
+    const { query, topK = 5 } = req.body;
+    if (!query) {
+      return res.status(400).json({ status: "error", message: "Query text diperlukan" });
+    }
+
+    const allChunks = await getAllDocumentChunks();
+    const relevantChunks = await searchRelevantChunks(query, allChunks, {
+      topK: Number(topK),
+      minScore: 0.0, // allow seeing lower score matches for debugging
+    });
+
+    const matches = relevantChunks.map(c => ({
+      documentId: c.documentId,
+      documentTitle: c.documentTitle,
+      chunkIndex: (c as any).chunkIndex, // chunkIndex is implicitly preserved or added via indexing
+      score: c.score,
+      text: c.text,
+      sourceUrl: c.documentUrl,
+    }));
+
+    return res.json({
+      success: true,
+      query,
+      matches,
+    });
+  } catch (error) {
+    console.error("Query test failed:", error);
+    return res.status(500).json({ status: "error", message: "Gagal melakukan query testing" });
+  }
 };

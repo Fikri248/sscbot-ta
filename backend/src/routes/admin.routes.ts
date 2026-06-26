@@ -13,6 +13,9 @@ import {
   syncDataset,
   getSyncStatus,
   updateAdmin,
+  getDocumentChunksById,
+  getScrapedData,
+  queryTestRag,
 } from "../controllers/admin.controller";
 import { authMiddleware, requireAdmin } from "../middlewares/auth.middleware";
 
@@ -36,6 +39,11 @@ router.delete("/datasets/:id", deleteDataset);
 
 router.post("/sync", syncDataset);
 router.get("/sync/status", getSyncStatus);
+
+// KB Management Endpoints
+router.get("/documents/:id/chunks", getDocumentChunksById);
+router.get("/scraped-data", getScrapedData);
+router.post("/rag/query-test", queryTestRag);
 
 router.get("/", (_req, res) => {
   res.status(200).json({
