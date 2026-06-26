@@ -261,21 +261,21 @@ export function KnowledgeBase() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => {
                 fetchDocuments()
                 fetchSyncStatus()
               }}
-              className="p-2 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground"
+              className="h-10 px-3 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground"
               title="Refresh Daftar"
             >
-              <RefreshCcw className="w-5 h-5" />
+              <RefreshCcw className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium"
+              className="h-10 flex items-center gap-2 px-4 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium whitespace-nowrap"
             >
               <Upload className="w-4 h-4" />
               Create / Upload
@@ -284,7 +284,7 @@ export function KnowledgeBase() {
             <button
               onClick={handleSync}
               disabled={isSyncing}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium"
+              className="h-10 flex items-center gap-2 px-4 bg-primary text-white rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium whitespace-nowrap"
             >
               {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
               {isSyncing ? "Sinkronisasi..." : "Sync Knowledge Base"}
@@ -322,40 +322,7 @@ export function KnowledgeBase() {
           </div>
         </div>
 
-        {previewDoc && (
-          <div className="p-6 border-b bg-slate-50">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="font-semibold flex items-center gap-2 text-slate-800">
-                  <Eye className="w-4 h-4" />
-                  Detail Dokumen
-                </h3>
-                <div className="mt-3 text-sm space-y-2 text-slate-600">
-                  <p><strong className="text-slate-900">Judul:</strong> {previewDoc.title}</p>
-                  <p><strong className="text-slate-900">File:</strong> {previewDoc.fileName}</p>
-                  <p><strong className="text-slate-900">Tipe:</strong> {getFileType(previewDoc.mimetype, previewDoc.fileName)}</p>
-                  <p><strong className="text-slate-900">Chunks:</strong> {previewDoc.chunkCount}</p>
-                  <p><strong className="text-slate-900">Panjang teks:</strong> {previewDoc.textLength?.toLocaleString("id-ID") || 0}</p>
-                  {previewDoc.localUrl && (
-                    <p>
-                      <strong className="text-slate-900">File URL:</strong>{" "}
-                      <a className="text-blue-600 hover:underline font-medium" href={`${BACKEND_BASE_URL}${previewDoc.localUrl}`} target="_blank" rel="noreferrer">
-                        Buka file di tab baru &rarr;
-                      </a>
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => setPreviewDoc(null)}
-                className="p-2 rounded-md hover:bg-slate-200 transition text-slate-500"
-                title="Tutup Detail"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
+
 
         <div className="p-4 md:p-5 bg-gray-50/50 rounded-b-xl">
           {isLoading ? (
@@ -428,27 +395,24 @@ export function KnowledgeBase() {
                   <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end mt-2 pt-4 lg:mt-0 lg:pt-0 border-t lg:border-t-0 border-gray-100">
                     <button
                       onClick={() => setPreviewDoc(doc)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                      className="h-9 w-9 rounded-lg border flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                       title="Detail Dokumen"
                     >
                       <Eye className="w-4 h-4" />
-                      <span className="lg:hidden">Detail</span>
                     </button>
                     <button
                       onClick={() => handleOpenEdit(doc)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      className="h-9 w-9 rounded-lg border border-blue-200 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
                       title="Update Dokumen"
                     >
                       <Edit3 className="w-4 h-4" />
-                      <span className="lg:hidden">Edit</span>
                     </button>
                     <button
                       onClick={() => handleOpenDelete(doc)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      className="h-9 w-9 rounded-lg border border-red-200 flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
                       title="Hapus Dokumen"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span className="lg:hidden">Hapus</span>
                     </button>
                   </div>
                 </div>
@@ -619,15 +583,12 @@ export function KnowledgeBase() {
               <p className="font-semibold text-slate-800 break-words line-clamp-2 max-w-full px-4 mb-4">
                 "{docToDelete.title}"
               </p>
-              <div className="bg-red-50 p-3 rounded-lg border border-red-100 w-full mb-6 text-left">
-                <p className="text-xs text-red-800 font-medium flex gap-2 items-start">
-                  <span className="mt-0.5">&bull;</span>
-                  Menghapus dokumen akan otomatis menghapus semua data <strong>chunks</strong> yang bersangkutan.
-                </p>
-                <p className="text-xs text-red-800 font-medium flex gap-2 items-start mt-1">
-                  <span className="mt-0.5">&bull;</span>
-                  Chatbot tidak akan lagi bisa merujuk informasi dari dokumen ini.
-                </p>
+              <div className="bg-red-50 p-4 rounded-lg border border-red-100 w-full mb-6 text-left">
+                <ul className="list-disc pl-5 space-y-2 text-sm text-red-800 leading-relaxed">
+                  <li>Dokumen ini akan dihapus dari Knowledge Base.</li>
+                  <li>Semua chunk yang berkaitan dengan dokumen ini juga akan ikut dihapus.</li>
+                  <li>Chatbot tidak akan lagi menggunakan dokumen ini sebagai referensi.</li>
+                </ul>
               </div>
             </div>
             <div className="flex bg-slate-50 border-t border-slate-100 p-4 gap-3 justify-end">
@@ -646,6 +607,45 @@ export function KnowledgeBase() {
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 {isDeleting ? "Menghapus..." : "Ya, Hapus Dokumen"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Detail Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden relative">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="font-semibold text-lg text-slate-800 flex items-center gap-2">
+                <Eye className="w-5 h-5 text-slate-600" />
+                Detail Dokumen
+              </h3>
+              <button 
+                onClick={() => setPreviewDoc(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <div className="space-y-3 text-sm text-slate-600">
+                <p><strong className="text-slate-900 inline-block w-28">Judul:</strong> {previewDoc.title}</p>
+                <p><strong className="text-slate-900 inline-block w-28">File:</strong> {previewDoc.fileName}</p>
+                <p><strong className="text-slate-900 inline-block w-28">Tipe:</strong> {getFileType(previewDoc.mimetype, previewDoc.fileName)}</p>
+                <p><strong className="text-slate-900 inline-block w-28">Chunks:</strong> {previewDoc.chunkCount}</p>
+                <p><strong className="text-slate-900 inline-block w-28">Panjang teks:</strong> {previewDoc.textLength?.toLocaleString("id-ID") || 0} karakter</p>
+                <p><strong className="text-slate-900 inline-block w-28">Diperbarui:</strong> {previewDoc.updatedAt ? new Date(previewDoc.updatedAt).toLocaleString("id-ID") : "-"}</p>
+                {previewDoc.localUrl ? (
+                  <p className="pt-2">
+                    <strong className="text-slate-900 inline-block w-28">File URL:</strong>{" "}
+                    <a className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1" href={`${BACKEND_BASE_URL}${previewDoc.localUrl}`} target="_blank" rel="noreferrer">
+                      Buka file di tab baru &rarr;
+                    </a>
+                  </p>
+                ) : (
+                  <p className="pt-2 text-slate-400 italic">File tidak memiliki URL yang bisa diakses langsung.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
