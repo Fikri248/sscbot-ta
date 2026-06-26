@@ -20,6 +20,8 @@ import {
 } from "../utils/sourceUrlResolver";
 import { normalizeQuery } from "../utils/textNormalizer";
 
+import { pool } from "../config/database";
+
 type ChatMessage = {
   id: string;
   sessionId: string;
@@ -37,9 +39,6 @@ type ChatSession = {
   createdAt: string;
   updatedAt: string;
 };
-
-export const chatSessions: ChatSession[] = [];
-export const chatMessages: ChatMessage[] = [];
 
 function getMessageFromBody(body: unknown): string | null {
   if (!body || typeof body !== "object") return null;
@@ -67,48 +66,66 @@ function getSessionIdFromBody(body: unknown): string {
   return "default-session";
 }
 
-function createSession(sessionId?: string): ChatSession {
+async function ensureChatSession(sessionId: string, title?: string, userId?: string) {
   const id = sessionId || `session-${Date.now()}`;
+  const now = new Date().toISOString();
 
-  const existing = chatSessions.find((session) => session.sessionId === id);
+  const [existing]: any = await pool.query(
+    "SELECT id FROM chat_sessions WHERE id = ? LIMIT 1",
+    [id]
+  );
 
-  if (existing) {
-    existing.updatedAt = new Date().toISOString();
-    return existing;
+  if (existing.length > 0) {
+    await pool.query(
+      "UPDATE chat_sessions SET updatedAt = ? WHERE id = ?",
+      [now, id]
+    );
+    return id;
   }
 
-  const newSession: ChatSession = {
-    id,
-    sessionId: id,
-    title: "Chat Tugas Akhir",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  chatSessions.push(newSession);
-
-  return newSession;
+  await pool.query(
+    "INSERT INTO chat_sessions (id, userId, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)",
+    [id, userId || null, title || "Chat Tugas Akhir", now, now]
+  );
+  return id;
 }
 
-function saveChat(
+async function saveChatMessage(
   sessionId: string,
   role: "user" | "assistant",
   content: string,
-  options?: {
-    sources?: any[];
-    action?: string | null;
-  }
+  options?: { sources?: any[]; action?: string | null }
 ) {
-  createSession(sessionId);
+  const msgId = `${Date.now()}-${role}-${Math.random().toString(36).slice(2)}`;
+  const now = new Date().toISOString();
+  
+  await ensureChatSession(sessionId);
+  
+  const sourcesStr = options?.sources && options.sources.length > 0 ? JSON.stringify(options.sources) : null;
 
-  chatMessages.push({
-    id: `${Date.now()}-${role}-${Math.random().toString(36).slice(2)}`,
-    sessionId,
-    role,
-    content,
-    createdAt: new Date().toISOString(),
-    sources: options?.sources || [],
-    action: options?.action || null,
+  await pool.query(
+    "INSERT INTO chat_messages (id, sessionId, role, content, sources, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
+    [msgId, sessionId, role, content, sourcesStr, now]
+  );
+}
+
+async function getMessagesBySessionId(sessionId: string) {
+  const [rows]: any = await pool.query(
+    "SELECT role, content, sources, createdAt FROM chat_messages WHERE sessionId = ? ORDER BY createdAt ASC",
+    [sessionId]
+  );
+  
+  return rows.map((row: any) => {
+    let parsedSources = [];
+    if (row.sources) {
+      try { parsedSources = JSON.parse(row.sources); } catch(e) {}
+    }
+    return {
+      role: row.role,
+      content: row.content,
+      createdAt: row.createdAt,
+      sources: parsedSources,
+    };
   });
 }
 
@@ -221,8 +238,19 @@ function formatDocumentSourcesAnswer(params: {
 }
 
 
-export async function startChatSession(_req: Request, res: Response) {
-  const session = createSession();
+export async function startChatSession(req: Request, res: Response) {
+  const generatedId = `session-${Date.now()}`;
+  const userId = (req.body && req.body.userId) || (req as any).user?.id || null;
+  const sessionId = await ensureChatSession(generatedId, "Chat Tugas Akhir", userId);
+  const now = new Date().toISOString();
+  
+  const session = {
+    id: sessionId,
+    sessionId: sessionId,
+    title: "Chat Tugas Akhir",
+    createdAt: now,
+    updatedAt: now,
+  };
 
   return res.status(200).json({
     success: true,
@@ -252,7 +280,7 @@ export async function sendChatMessage(req: Request, res: Response) {
 
     const sessionId = getSessionIdFromBody(req.body);
 
-    saveChat(sessionId, "user", cleanMessage);
+    await saveChatMessage(sessionId, "user", cleanMessage);
 
     const lowerMsg = cleanMessage.toLowerCase();
     const normalizedMessage = normalizeQuery(lowerMsg);
@@ -260,22 +288,22 @@ export async function sendChatMessage(req: Request, res: Response) {
     // 1. Hardcoded Fast-Paths (0 API Calls)
     if (["hai", "halo", "hello", "pagi", "siang", "sore", "malam", "ping", "p"].includes(normalizedMessage)) {
       const answer = "Halo! Saya SSC ChatBot, Asisten SSC. Ada yang bisa saya bantu terkait layanan akademik atau tugas akhir?";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
     if (["kamu siapa", "siapa kamu", "siapa namamu", "identitasmu"].includes(lowerMsg)) {
       const answer = "Saya SSC ChatBot, Asisten SSC yang membantu menjawab pertanyaan akademik berdasarkan dokumen yang tersedia.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
     if (["terima kasih", "makasih", "thanks", "thank you", "ok", "oke", "baik", "sip"].includes(lowerMsg)) {
       const answer = "Sama-sama! Jangan ragu untuk bertanya lagi jika ada yang perlu dibantu terkait tugas akhir atau layanan akademik SSC.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
     if (["bantu saya", "bantuan", "saya butuh bantuan", "help", "bisa bantu"].includes(normalizedMessage)) {
       const answer = "Saya bisa membantu menjawab pertanyaan seputar layanan akademik SSC, tugas akhir, surat aktif mahasiswa, TOSS, cumlaude, kelulusan, dan link dokumen penting. Silakan tanyakan kebutuhan Anda.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
@@ -292,7 +320,7 @@ export async function sendChatMessage(req: Request, res: Response) {
     })();
 
     if (isSourceFollowUp) {
-      const sessionMessages = chatMessages.filter((m) => m.sessionId === sessionId);
+      const sessionMessages = await getMessagesBySessionId(sessionId);
       // Remove the very last message which is the current user query, then find last assistant
       const priorMessages = sessionMessages.slice(0, -1);
       const lastAssistantMsg = [...priorMessages].reverse().find((m) => m.role === "assistant");
@@ -302,7 +330,7 @@ export async function sendChatMessage(req: Request, res: Response) {
         
         if (!sources || sources.length === 0) {
           const answer = "Jawaban sebelumnya tidak berasal dari dokumen SSC sehingga tidak memiliki sumber dokumen yang dapat ditampilkan.";
-          saveChat(sessionId, "assistant", answer, { sources: [] });
+          await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
           return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
         }
         
@@ -310,7 +338,7 @@ export async function sendChatMessage(req: Request, res: Response) {
 
         if (validSources.length === 0) {
           const answer = "Sumber jawaban sebelumnya ditemukan, tetapi tautan sumber belum tersedia.";
-          saveChat(sessionId, "assistant", answer, { sources });
+          await saveChatMessage(sessionId, "assistant", answer, { sources });
           return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: false });
         }
 
@@ -322,11 +350,11 @@ export async function sendChatMessage(req: Request, res: Response) {
             : "Sumber jawaban sebelumnya berasal dari dokumen berikut:",
         });
 
-        saveChat(sessionId, "assistant", answer, { sources: displaySources });
+        await saveChatMessage(sessionId, "assistant", answer, { sources: displaySources });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: displaySources, showSources: true });
       } else {
         const answer = "Maaf, tidak ada sumber dokumen spesifik dari percakapan sebelumnya.";
-        saveChat(sessionId, "assistant", answer, { sources: [] });
+        await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
       }
     }
@@ -355,7 +383,7 @@ export async function sendChatMessage(req: Request, res: Response) {
       // If it's a clear question or long text but has no domain keywords, drop it instantly (0 API calls)
       if (hasQuestionWords || cleanMessage.length > 30) {
         const answer = "Maaf, saya hanya dapat membantu pertanyaan yang berkaitan dengan layanan akademik atau tugas akhir berdasarkan dokumen yang tersedia.";
-        saveChat(sessionId, "assistant", answer, { sources: [] });
+        await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
       }
 
@@ -374,11 +402,11 @@ ATURAN:
 4. Jangan bertele-tele.`,
         });
 
-        saveChat(sessionId, "assistant", answer, { sources: [] });
+        await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
       } else {
         const answer = "Maaf, saya hanya dapat membantu pertanyaan yang berkaitan dengan layanan akademik atau tugas akhir berdasarkan dokumen yang tersedia.";
-        saveChat(sessionId, "assistant", answer, { sources: [] });
+        await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
       }
     }
@@ -455,7 +483,7 @@ ATURAN:
 
     if (isAmbiguousDraftIntent) {
       const answer = "Apakah yang dimaksud draft proposal untuk seminar, atau draft buku TA untuk pendaftaran sidang?";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
@@ -475,7 +503,7 @@ ATURAN:
 
     if (hasSignatureIntent && !hasSpecificSignatureContext) {
       const answer = "Pertanyaan Anda masih terlalu singkat. Apakah Anda bermaksud menanyakan tanda tangan untuk pendaftaran sidang, pelaksanaan sidang, lembar revisi setelah sidang, atau buku TA final? Mohon tuliskan konteks yang lebih spesifik agar saya dapat memberikan jawaban yang tepat.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
@@ -488,7 +516,7 @@ ATURAN:
     ];
     if (ambiguousQueries.includes(normalizedMessage)) {
       const answer = "Pertanyaan Anda masih terlalu singkat. Apakah Anda bermaksud menanyakan tanda tangan pembimbing untuk revisi Tugas Akhir, pendaftaran sidang, yudisium, atau dokumen lainnya? Mohon tuliskan konteks yang lebih spesifik agar saya dapat memberikan jawaban yang tepat.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
@@ -507,28 +535,28 @@ ATURAN:
     if (isSSCContactQuery) {
       const answer = "Email SSC Telkom University Surabaya adalah ssc@ittelkom-sby.ac.id. Nomor WhatsApp SSC Surabaya adalah 085179793597.";
       const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
     }
 
     if (isPUTIContactQuery) {
       const answer = "Untuk layanan PuTI (Layanan IT), Anda dapat menghubungi WhatsApp 6285179793597 atau melalui E-Ticket di satu.telkomuniversity.ac.id.";
       const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
     }
 
     if (isTOSSContactQuery) {
       const answer = "Layanan TOSS dapat diakses melalui linktr.ee/toss.telu atau website resmi toss.telkomuniversity.ac.id.";
       const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
     }
 
     if (isTAKSKPIContactQuery) {
       const answer = "Untuk layanan TAK dan SKPI, Anda dapat menghubungi nomor WhatsApp 6281323233955.";
       const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
     }
 
@@ -564,7 +592,7 @@ Mohon arahan atau tindak lanjutnya ya Kak.
 
 Terima kasih.`;
       const source = { title: "Alur_Menghubungi_SSC.txt", url: "/dataset/Alur_Menghubungi_SSC.txt" };
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
     }
 
@@ -577,7 +605,7 @@ Terima kasih.`;
 
     if (wantsAdmin) {
       const answer = "Baik, saya akan mengarahkan kamu untuk menghubungi admin secara langsung. Silakan isi data berikut terlebih dahulu: nama, NIM, prodi, dan nomor telepon.";
-      saveChat(sessionId, "assistant", answer, { action: "collect_admin_contact", sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { action: "collect_admin_contact", sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: "collect_admin_contact", sources: [], showSources: false });
     }
 
@@ -586,7 +614,7 @@ Terima kasih.`;
 
     if (!allChunks.length) {
       const answer = "Maaf, belum ada dokumen tugas akhir yang tersedia. Admin perlu mengunggah atau menyediakan dokumen tugas akhir terlebih dahulu agar saya dapat menjawab pertanyaan.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
@@ -598,7 +626,7 @@ Terima kasih.`;
         url: TUGAS_AKHIR_PORTAL_URL,
       };
       const answer = `Link portal informasi Tugas Akhir SSC dapat diakses melalui:\n${TUGAS_AKHIR_PORTAL_URL}\n\nDi portal tersebut, mahasiswa dapat melihat informasi dan dokumen terkait Tugas Akhir.`;
-      saveChat(sessionId, "assistant", answer, { sources: [source] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [source] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [source], showSources: true });
     }
 
@@ -620,7 +648,7 @@ Terima kasih.`;
             : "Berikut dokumen sumber yang sesuai dengan pertanyaan Anda:",
         });
 
-        saveChat(sessionId, "assistant", answer, { sources });
+        await saveChatMessage(sessionId, "assistant", answer, { sources });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources, showSources: true });
       }
     }
@@ -661,7 +689,7 @@ Terima kasih.`;
           includeMainPortal: false,
           intro: "Link sumber yang tersedia:",
         });
-        saveChat(sessionId, "assistant", answer, { sources: displaySources });
+        await saveChatMessage(sessionId, "assistant", answer, { sources: displaySources });
         return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: displaySources, showSources: true });
       }
     }
@@ -849,7 +877,7 @@ Terima kasih.`;
 
     if (!relevantChunks.length) {
       const answer = "Maaf, saya hanya dapat membantu pertanyaan yang berkaitan dengan layanan akademik atau tugas akhir berdasarkan dokumen yang tersedia.";
-      saveChat(sessionId, "assistant", answer, { sources: [] });
+      await saveChatMessage(sessionId, "assistant", answer, { sources: [] });
       return res.status(200).json({ success: true, sessionId, answer, message: answer, action: null, sources: [], showSources: false });
     }
 
@@ -883,7 +911,7 @@ Terima kasih.`;
 
     const sources = getUniqueSources(relevantChunks);
 
-    saveChat(sessionId, "assistant", answer, {
+    await saveChatMessage(sessionId, "assistant", answer, {
       sources,
     });
 
@@ -910,9 +938,26 @@ export async function getChatHistory(req: Request, res: Response) {
   const sessionId =
     typeof req.query.sessionId === "string" ? req.query.sessionId : null;
 
-  const messages = sessionId
-    ? chatMessages.filter((message) => message.sessionId === sessionId)
-    : chatMessages;
+  let messages = [];
+  if (sessionId) {
+    messages = await getMessagesBySessionId(sessionId);
+  } else {
+    const [rows]: any = await pool.query(
+      "SELECT role, content, sources, createdAt FROM chat_messages ORDER BY createdAt ASC LIMIT 100"
+    );
+    messages = rows.map((row: any) => {
+      let parsedSources = [];
+      if (row.sources) {
+        try { parsedSources = JSON.parse(row.sources); } catch(e) {}
+      }
+      return {
+        role: row.role,
+        content: row.content,
+        createdAt: row.createdAt,
+        sources: parsedSources,
+      };
+    });
+  }
 
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma", "no-cache");
@@ -929,14 +974,12 @@ export async function clearChatHistory(req: Request, res: Response) {
     typeof req.query.sessionId === "string" ? req.query.sessionId : null;
 
   if (sessionId) {
-    for (let i = chatMessages.length - 1; i >= 0; i--) {
-      if (chatMessages[i].sessionId === sessionId) {
-        chatMessages.splice(i, 1);
-      }
-    }
+    await pool.query("DELETE FROM chat_messages WHERE sessionId = ?", [sessionId]);
+    await pool.query("DELETE FROM chat_sessions WHERE id = ?", [sessionId]);
   } else {
-    chatMessages.length = 0;
-    chatSessions.length = 0;
+    // Only clear if no sessionId is provided
+    await pool.query("DELETE FROM chat_messages");
+    await pool.query("DELETE FROM chat_sessions");
   }
 
   return res.status(200).json({

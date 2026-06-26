@@ -1,31 +1,53 @@
 import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 
-const mode = process.env.DB_MODE?.toLowerCase();
+dotenv.config();
 
-let dbHost = process.env.DB_HOST || "localhost";
-let dbPort = Number(process.env.DB_PORT) || 3306;
-let dbUser = process.env.DB_USER || "root";
-let dbPassword = process.env.DB_PASSWORD || "root";
-let dbName = process.env.DB_NAME || "ssc_bot";
-let dbSslStr = process.env.DB_SSL;
+const dbMode = (process.env.DB_MODE || "local").toLowerCase();
 
-if (mode === "local") {
-  dbHost = process.env.LOCAL_DB_HOST || dbHost;
-  dbPort = Number(process.env.LOCAL_DB_PORT) || dbPort;
-  dbUser = process.env.LOCAL_DB_USER || dbUser;
-  dbPassword = process.env.LOCAL_DB_PASSWORD || dbPassword;
-  dbName = process.env.LOCAL_DB_NAME || dbName;
-  dbSslStr = process.env.LOCAL_DB_SSL !== undefined ? process.env.LOCAL_DB_SSL : dbSslStr;
-} else if (mode === "aiven") {
-  dbHost = process.env.AIVEN_DB_HOST || dbHost;
-  dbPort = Number(process.env.AIVEN_DB_PORT) || dbPort;
-  dbUser = process.env.AIVEN_DB_USER || dbUser;
-  dbPassword = process.env.AIVEN_DB_PASSWORD || dbPassword;
-  dbName = process.env.AIVEN_DB_NAME || dbName;
-  dbSslStr = process.env.AIVEN_DB_SSL !== undefined ? process.env.AIVEN_DB_SSL : dbSslStr;
+let dbHost, dbPort, dbUser, dbPassword, dbName, dbSslStr, poolConfig;
+
+if (dbMode === "aiven") {
+  dbHost = process.env.AIVEN_DB_HOST;
+  dbPort = Number(process.env.AIVEN_DB_PORT);
+  dbUser = process.env.AIVEN_DB_USER;
+  dbPassword = process.env.AIVEN_DB_PASSWORD;
+  dbName = process.env.AIVEN_DB_NAME;
+  dbSslStr = process.env.AIVEN_DB_SSL !== undefined ? process.env.AIVEN_DB_SSL : process.env.DB_SSL;
+  
+  poolConfig = {
+    host: dbHost,
+    port: dbPort,
+    user: dbUser,
+    password: dbPassword,
+    database: dbName,
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 20000
+  };
+} else {
+  dbHost = process.env.LOCAL_DB_HOST || "localhost";
+  dbPort = Number(process.env.LOCAL_DB_PORT || 3306);
+  dbUser = process.env.LOCAL_DB_USER || "root";
+  dbPassword = process.env.LOCAL_DB_PASSWORD || "";
+  dbName = process.env.LOCAL_DB_NAME || "ssc_bot";
+  dbSslStr = process.env.LOCAL_DB_SSL !== undefined ? process.env.LOCAL_DB_SSL : process.env.DB_SSL;
+  
+  poolConfig = {
+    host: dbHost,
+    port: dbPort,
+    user: dbUser,
+    password: dbPassword,
+    database: dbName,
+    ssl: dbSslStr === "true" ? { rejectUnauthorized: false } : undefined,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    connectTimeout: 20000
+  };
 }
-
-const shouldUseSSL = dbSslStr !== "false";
 
 export const dbConfig = {
   host: dbHost,
@@ -35,20 +57,10 @@ export const dbConfig = {
   database: dbName,
 };
 
-export const pool = mysql.createPool({
-  ...dbConfig,
-  ssl: shouldUseSSL
-    ? {
-        rejectUnauthorized: false,
-      }
-    : undefined,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+export const pool = mysql.createPool(poolConfig);
 
-export const activeDbMode = mode || "legacy";
-export const activeDbSsl = shouldUseSSL;
+export const activeDbMode = dbMode;
+export const activeDbSsl = dbSslStr !== "false";
 
 async function ensureColumn(tableName: string, columnName: string, ddl: string) {
   const [rows]: any = await pool.query(
@@ -71,6 +83,7 @@ export async function initDB() {
     console.log(`\n=== Database Configuration ===`);
     console.log(`Database Mode: ${activeDbMode}`);
     console.log(`Database Host: ${dbConfig.host}`);
+    console.log(`Database Port: ${dbConfig.port}`);
     console.log(`Database Name: ${dbConfig.database}`);
     console.log(`SSL Enabled: ${activeDbSsl}\n`);
 
@@ -142,6 +155,35 @@ export async function initDB() {
       await pool.query("ALTER TABLE documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
       await pool.query("ALTER TABLE document_chunks CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     } catch(e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_sessions (
+        id VARCHAR(100) PRIMARY KEY,
+        userId VARCHAR(100) NULL,
+        title VARCHAR(255) NOT NULL DEFAULT 'Percakapan Baru',
+        createdAt VARCHAR(100) NOT NULL,
+        updatedAt VARCHAR(100) NOT NULL,
+        deletedAt VARCHAR(100) NULL,
+        INDEX idx_chat_sessions_userId (userId),
+        INDEX idx_chat_sessions_updatedAt (updatedAt)
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id VARCHAR(120) PRIMARY KEY,
+        sessionId VARCHAR(100) NOT NULL,
+        role VARCHAR(30) NOT NULL,
+        content LONGTEXT NOT NULL,
+        sources LONGTEXT NULL,
+        createdAt VARCHAR(100) NOT NULL,
+        INDEX idx_chat_messages_sessionId (sessionId),
+        INDEX idx_chat_messages_createdAt (createdAt),
+        CONSTRAINT fk_chat_messages_session
+          FOREIGN KEY (sessionId) REFERENCES chat_sessions(id)
+          ON DELETE CASCADE
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    `);
 
     const adminEmail = process.env.ADMIN_EMAIL || "admin";
     const adminPassword = process.env.ADMIN_PASSWORD || "admin123";

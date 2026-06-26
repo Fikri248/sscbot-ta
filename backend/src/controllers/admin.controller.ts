@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../config/database";
-import { chatSessions, chatMessages } from "./chat.controller";
 import {
   createTextDataset,
   deleteDocumentById,
@@ -17,15 +16,18 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
     const [documentRows]: any = await pool.query("SELECT COUNT(*) as total FROM documents WHERE deletedAt IS NULL");
     const [chunkRows]: any = await pool.query("SELECT COUNT(*) as total FROM document_chunks");
 
+    const [chatSessionRows]: any = await pool.query("SELECT COUNT(*) as total FROM chat_sessions");
+    const [chatMessageRows]: any = await pool.query("SELECT COUNT(*) as total FROM chat_messages");
+
     return res.json({
       status: "success",
       data: {
         totalUsers: userRows[0].total,
         totalDatasets: documentRows[0].total,
         totalChunks: chunkRows[0].total,
-        activeChats: chatSessions.length,
-        totalMessages: chatMessages.length,
-        aiTokensUsed: chatMessages.length * 15,
+        activeChats: chatSessionRows[0].total,
+        totalMessages: chatMessageRows[0].total,
+        aiTokensUsed: chatMessageRows[0].total * 15,
       },
     });
   } catch (error) {
@@ -47,7 +49,11 @@ export const getNotifications = async (_req: Request, res: Response) => {
       created_at: user.createdAt || new Date().toISOString(),
     }));
 
-    const chatActivities = chatSessions.map((session) => ({
+    const [sessionRows]: any = await pool.query(
+      "SELECT id, createdAt FROM chat_sessions ORDER BY createdAt DESC LIMIT 5"
+    );
+
+    const chatActivities = sessionRows.map((session: any) => ({
       id: `chat-${session.id}`,
       type: "chat",
       name: "Mahasiswa",
