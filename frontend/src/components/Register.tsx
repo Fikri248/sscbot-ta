@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { AlertModal, type AlertType } from "./AlertModal";
-import { API_BASE_URL } from "@/services/sscApi";
+import { API_BASE_URL, NGROK_HEADERS } from "@/services/sscApi";
 
 type RegisterProps = {
   onShowLogin: () => void;
@@ -48,7 +48,10 @@ function Register({ onShowLogin, onLogin }: RegisterProps) {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...NGROK_HEADERS
+        },
         body: JSON.stringify({ name: username, email: username, password, role: "user" }),
       });
       const data = await response.json();
@@ -58,7 +61,10 @@ function Register({ onShowLogin, onLogin }: RegisterProps) {
         try {
           const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              ...NGROK_HEADERS
+            },
             body: JSON.stringify({ email: username, password }),
           });
           const loginData = await loginResponse.json();

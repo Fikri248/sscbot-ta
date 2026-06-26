@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw, Upload, Edit3, Save, X, Eye } from "lucide-react"
-import { API_BASE_URL, BACKEND_BASE_URL } from "@/services/sscApi"
+import { API_BASE_URL, BACKEND_BASE_URL, NGROK_HEADERS } from "@/services/sscApi"
 
 type DocumentItem = {
   id: string
@@ -38,7 +38,10 @@ export function KnowledgeBase() {
   const [replacementFile, setReplacementFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
-  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token") || ""}` })
+  const authHeaders = () => ({ 
+    Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    ...NGROK_HEADERS
+  })
 
   const fetchDocuments = async () => {
     setIsLoading(true)

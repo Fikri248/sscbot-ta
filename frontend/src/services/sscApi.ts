@@ -11,15 +11,29 @@ export type ChatSource = {
   score?: number;
 };
 
+export const NGROK_HEADERS = {
+  "ngrok-skip-browser-warning": "true",
+};
+
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("token");
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...NGROK_HEADERS };
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
-async function requestJson(url: string, options?: RequestInit) {
-  const response = await fetch(url, options);
+async function requestJson(url: string, options: RequestInit = {}) {
+  const customHeaders: Record<string, string> = { ...NGROK_HEADERS };
+  if (options.headers) {
+    Object.assign(customHeaders, options.headers);
+  }
+  
+  const customOptions: RequestInit = {
+    ...options,
+    headers: customHeaders,
+  };
+
+  const response = await fetch(url, customOptions);
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {

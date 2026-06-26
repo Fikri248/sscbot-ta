@@ -5,7 +5,7 @@ import { TopTopics } from "./TopTopics"
 import { SystemStatus } from "./SystemStatus"
 import { Users, MessageCircle, MessageSquareText, Zap } from "lucide-react"
 import { useState, useEffect } from "react"
-import { API_BASE_URL } from "@/services/sscApi"
+import { API_BASE_URL, NGROK_HEADERS } from "@/services/sscApi"
 
 export function Overview() {
   const [stats, setStats] = useState({
@@ -20,7 +20,10 @@ export function Overview() {
   useEffect(() => {
     const fetchStats = () => {
       fetch(`${API_BASE_URL}/admin/stats`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+        headers: { 
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          ...NGROK_HEADERS
+        },
       })
         .then(res => res.json())
         .then(data => {
