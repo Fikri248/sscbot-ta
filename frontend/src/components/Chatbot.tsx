@@ -587,32 +587,11 @@ function Chatbot({ onLogout }: ChatbotProps) {
                         <div className="brutalist-bubble-bot w-full max-w-full overflow-hidden">
                           {renderMessageContent(m.content)}
                           
-                          {m.sources && m.sources.length > 0 && (
-                            <div className="mt-4 pt-3 border-t-2 border-gray-200">
-                              <p className="text-sm font-black text-[#111827] mb-2 uppercase">Sumber / Link Dokumen</p>
-                              <div className="space-y-2">
-                                {m.sources.map((source, sourceIndex) => (
-                                  <div key={`${source.title}-${sourceIndex}`} className="bg-white border-2 border-[#111827] p-3 shadow-[2px_2px_0px_#111827]">
-                                    <p className="font-bold text-sm text-[#111827] break-words">
-                                      {source.title || "Dokumen sumber"}
-                                    </p>
-                                    {source.url ? (
-                                      <a
-                                        href={source.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-sm font-bold text-[#DC2626] underline break-all mt-1 inline-block"
-                                      >
-                                        {source.url}
-                                      </a>
-                                    ) : (
-                                      <p className="text-xs font-bold text-gray-500 mt-1">Link sumber belum tersedia.</p>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                          {/* 
+                            Visual render for sources has been removed to hide the 
+                            "SUMBER / LINK DOKUMEN" block from the UI, as requested. 
+                            The source data remains available in m.sources for backend logic.
+                          */}
                           
                           {/* Chatbot Actions */}
                           <div className="mt-4 pt-3 border-t-2 border-gray-100 flex items-center justify-between">
