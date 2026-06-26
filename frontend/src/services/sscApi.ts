@@ -155,7 +155,7 @@ export async function getChatHistory(sessionId?: string) {
     ? `${API_BASE_URL}/chat/history?sessionId=${sessionId}`
     : `${API_BASE_URL}/chat/history`;
 
-  const data = await requestJson(url);
+  const data = await requestJson(url, { cache: "no-store" });
 
   return {
     status: "success",
