@@ -534,3 +534,21 @@ export async function importDatasetFromFolder() {
 
   return { imported, skipped, errors };
 }
+
+export async function updateChunkText(chunkId: string, newText: string) {
+  const [rows]: any = await pool.query("SELECT * FROM document_chunks WHERE id = ?", [chunkId]);
+  if (!rows.length) {
+    return { updated: false, message: "Potongan informasi tidak ditemukan." };
+  }
+
+  const embedding = await generateEmbedding(newText);
+  
+  await pool.query(
+    "UPDATE document_chunks SET text = ?, embedding = ? WHERE id = ?",
+    [newText, JSON.stringify(embedding), chunkId]
+  );
+  
+  await syncDocumentChunksJsonFromDatabase();
+  
+  return { updated: true, chunkId };
+}

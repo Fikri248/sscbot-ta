@@ -4,8 +4,6 @@ import { DashboardHeader } from "./DashboardHeader"
 import { Overview } from "./Overview"
 
 import { KnowledgeBase } from "./KnowledgeBase"
-import { ChunksViewer } from "./ChunksViewer"
-import { ScrapedDataViewer } from "./ScrapedDataViewer"
 import { QueryTester } from "./QueryTester"
 import { Loader2 } from "lucide-react"
 
@@ -29,12 +27,9 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
 
   const getPageTitle = () => {
     switch (activeTab) {
-      case "overview": return "Overview"
-      case "documents": return "Documents"
-      case "chunks": return "Chunks Viewer"
-      case "scraped-data": return "Scraped Data"
-      case "query-tester": return "RAG Query Tester"
-      case "sync": return "Sync & Maintenance"
+      case "overview": return "Ringkasan"
+      case "documents": return "Dokumen"
+      case "query-tester": return "Uji Pertanyaan"
       default: return "Dashboard"
     }
   }
@@ -88,27 +83,9 @@ export function DashboardLayout({ username, onLogout }: DashboardLayoutProps) {
                 <KnowledgeBase />
               </div>
             )}
-            {activeTab === "chunks" && (
-              <div>
-                <ChunksViewer />
-              </div>
-            )}
-            {activeTab === "scraped-data" && (
-              <div>
-                <ScrapedDataViewer />
-              </div>
-            )}
             {activeTab === "query-tester" && (
               <div>
                 <QueryTester />
-              </div>
-            )}
-            {["sync"].includes(activeTab) && (
-              <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground">
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">Sync & Maintenance</h2>
-                  <p>Fitur sinkronisasi saat ini tersedia melalui tombol di bagian Documents.</p>
-                </div>
               </div>
             )}
           </div>

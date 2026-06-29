@@ -1,10 +1,7 @@
 import { 
   LayoutDashboard, 
   FileText,
-  Database,
-  Globe,
   Search,
-  RefreshCcw,
   LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,12 +16,9 @@ type AppSidebarProps = {
 
 export function AppSidebar({ activeTab, onTabChange, onLogout, username, isCollapsed }: AppSidebarProps) {
   const workspaceItems = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "documents", label: "Documents", icon: FileText },
-    { id: "chunks", label: "Chunks", icon: Database },
-    { id: "scraped-data", label: "Scraped Data", icon: Globe },
-    { id: "query-tester", label: "Query Tester", icon: Search },
-    { id: "sync", label: "Sync", icon: RefreshCcw },
+    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { id: "documents", label: "Dokumen", icon: FileText },
+    { id: "query-tester", label: "Query", icon: Search },
   ]
 
   const systemItems: any[] = []

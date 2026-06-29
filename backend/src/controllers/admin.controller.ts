@@ -8,6 +8,7 @@ import {
   getAllDocuments,
   importDatasetFromFolder,
   updateTextDataset,
+  updateChunkText,
 } from "../services/document.service";
 import { searchRelevantChunks } from "../services/rag.service";
 import fs from "fs";
@@ -16,9 +17,23 @@ import path from "path";
 export const getDashboardStats = async (_req: Request, res: Response) => {
   try {
     const [userRows]: any = await pool.query("SELECT COUNT(*) as total FROM users WHERE role = 'user'");
-    const [documentRows]: any = await pool.query("SELECT COUNT(*) as total FROM documents WHERE deletedAt IS NULL");
-    const [chunkRows]: any = await pool.query("SELECT COUNT(*) as total FROM document_chunks");
+    
+    const [docStats]: any = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN fileName LIKE '%.pdf' OR mimetype LIKE '%pdf%' THEN 1 ELSE 0 END) as pdfCount,
+        SUM(CASE WHEN fileName LIKE '%.docx' OR mimetype LIKE '%word%' THEN 1 ELSE 0 END) as docxCount,
+        SUM(CASE WHEN fileName LIKE '%.xlsx' OR mimetype LIKE '%sheet%' THEN 1 ELSE 0 END) as xlsxCount,
+        SUM(CASE WHEN fileName LIKE '%.txt' OR mimetype LIKE '%text%' THEN 1 ELSE 0 END) as txtCount,
+        MAX(updatedAt) as lastUpload
+      FROM documents WHERE deletedAt IS NULL
+    `);
 
+    const [latestDoc]: any = await pool.query(
+      "SELECT title, updatedAt FROM documents WHERE deletedAt IS NULL ORDER BY COALESCE(NULLIF(updatedAt, ''), uploadedAt) DESC LIMIT 1"
+    );
+
+    const [chunkRows]: any = await pool.query("SELECT COUNT(*) as total FROM document_chunks");
     const [chatSessionRows]: any = await pool.query("SELECT COUNT(*) as total FROM chat_sessions");
     const [chatMessageRows]: any = await pool.query("SELECT COUNT(*) as total FROM chat_messages");
 
@@ -26,7 +41,13 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
       status: "success",
       data: {
         totalUsers: userRows[0].total,
-        totalDatasets: documentRows[0].total,
+        totalDatasets: docStats[0].total || 0,
+        pdfCount: docStats[0].pdfCount || 0,
+        docxCount: docStats[0].docxCount || 0,
+        xlsxCount: docStats[0].xlsxCount || 0,
+        txtCount: docStats[0].txtCount || 0,
+        lastUpload: docStats[0].lastUpload,
+        latestDocument: latestDoc.length ? latestDoc[0].title : null,
         totalChunks: chunkRows[0].total,
         activeChats: chatSessionRows[0].total,
         totalMessages: chatMessageRows[0].total,
@@ -34,6 +55,7 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    console.error("Dashboard stats error:", error);
     return res.status(500).json({ status: "error", message: "Gagal mengambil statistik" });
   }
 };
@@ -419,5 +441,40 @@ export const queryTestRag = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Query test failed:", error);
     return res.status(500).json({ status: "error", message: "Gagal melakukan query testing" });
+  }
+};
+
+export const updateDocumentChunk = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text || text.trim() === "") {
+      return res.status(400).json({ status: "error", message: "Teks potongan informasi tidak boleh kosong" });
+    }
+
+    const result = await updateChunkText(String(id), text.trim());
+    if (!result.updated) {
+      return res.status(404).json({ status: "error", message: result.message });
+    }
+
+    return res.json({ status: "success", message: "Potongan informasi berhasil diperbarui" });
+  } catch (error) {
+    console.error("Update chunk error:", error);
+    return res.status(500).json({ status: "error", message: "Gagal memperbarui potongan informasi" });
+  }
+};
+
+export const getDocumentText = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const [rows]: any = await pool.query("SELECT extractedText FROM documents WHERE id = ? LIMIT 1", [id]);
+    if (!rows.length) {
+      return res.status(404).json({ status: "error", message: "Dokumen tidak ditemukan" });
+    }
+    return res.json({ status: "success", data: rows[0].extractedText });
+  } catch (error) {
+    console.error("Get document text error:", error);
+    return res.status(500).json({ status: "error", message: "Gagal mengambil teks dokumen" });
   }
 };

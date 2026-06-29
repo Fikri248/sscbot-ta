@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { API_BASE_URL, NGROK_HEADERS } from "@/services/sscApi";
-import { Loader2, Search, Play, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import { Loader2, Search, Play, ChevronDown, ChevronUp, AlertCircle, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 type Match = {
@@ -62,36 +62,36 @@ export function QueryTester() {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-          <Search className="w-5 h-5 text-red-600" />
-          RAG Query Tester
+    <div className="flex flex-col h-[calc(100vh-120px)] space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-card p-6 rounded-xl border shadow-sm shrink-0">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2 flex items-center gap-2">
+          <Sparkles className="w-6 h-6 text-primary" />
+          Uji Pertanyaan (Query Tester)
         </h2>
-        <p className="text-sm text-gray-500 mb-6">
-          Uji query ke algoritma Retrieval-Augmented Generation (RAG) untuk melihat chunk data apa saja yang akan diambil bot berdasarkan Cosine Similarity dan Lexical Bonus (tanpa menggunakan token API Groq).
+        <p className="text-sm text-muted-foreground mb-6 max-w-3xl">
+          Gunakan fitur ini untuk melihat potongan informasi apa saja yang akan ditemukan oleh sistem ketika pengguna menanyakan sesuatu. Ini membantu Anda memverifikasi apakah bot bisa menemukan jawaban yang tepat dari dokumen yang ada.
         </p>
         
         <form onSubmit={handleTestQuery} className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pertanyaan (Query)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Pertanyaan Simulasi</label>
             <Input
-              placeholder="Contoh: apa syarat pendaftaran yudisium?"
+              placeholder="Contoh: Apa syarat pendaftaran yudisium?"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full"
+              className="w-full bg-background"
               required
             />
           </div>
           <div className="w-full sm:w-32">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Top-K</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Jumlah Hasil</label>
             <Input
               type="number"
               min={1}
               max={20}
               value={topK}
               onChange={(e) => setTopK(Number(e.target.value))}
-              className="w-full"
+              className="w-full bg-background"
               required
             />
           </div>
@@ -99,84 +99,106 @@ export function QueryTester() {
             <button 
               type="submit"
               disabled={isLoading || !query.trim()}
-              className="h-10 px-6 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              Test Query
+              Uji Sekarang
             </button>
           </div>
         </form>
       </div>
 
-      <div className="bg-white rounded-xl border shadow-sm flex-1 flex flex-col overflow-hidden">
+      <div className="bg-card rounded-xl border shadow-sm flex-1 flex flex-col overflow-hidden">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-12 h-full">
-            <Loader2 className="w-8 h-8 animate-spin text-red-600 mb-4" />
-            <p className="text-sm text-gray-500 font-medium">Mencari dokumen (vector search)...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+            <p className="text-sm text-muted-foreground font-medium">Mencari informasi yang relevan...</p>
           </div>
         ) : errorMsg ? (
-          <div className="flex flex-col items-center justify-center p-12 h-full text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-            <p className="text-red-600 font-medium">{errorMsg}</p>
+          <div className="flex flex-col items-center justify-center p-12 h-full text-center bg-destructive/5">
+            <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+            <p className="text-destructive font-medium">{errorMsg}</p>
           </div>
         ) : !hasSearched ? (
           <div className="flex flex-col items-center justify-center p-12 h-full text-center">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-              <Search className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+              <Search className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Belum Ada Pencarian</h3>
-            <p className="text-gray-500">Masukkan pertanyaan dan tekan Test Query untuk melihat hasil.</p>
+            <h3 className="text-lg font-bold text-foreground mb-1">Belum Ada Pencarian</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">Masukkan pertanyaan di atas dan klik "Uji Sekarang" untuk melihat potongan data mana yang paling cocok dengan pertanyaan Anda.</p>
           </div>
         ) : matches.length === 0 ? (
           <div className="p-12 text-center h-full flex flex-col items-center justify-center">
-            <p className="text-gray-500 font-medium">Tidak ada chunk yang memenuhi batas (threshold) similarity score.</p>
+            <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+            <p className="text-muted-foreground font-medium text-lg">Tidak ada informasi yang ditemukan.</p>
+            <p className="text-sm text-muted-foreground mt-1">Coba gunakan kata kunci lain atau unggah dokumen yang relevan.</p>
           </div>
         ) : (
-          <div className="overflow-y-auto p-4 space-y-4 bg-gray-50 h-full">
-            <div className="text-sm font-medium text-gray-700 px-2 py-1">
-              Ditemukan {matches.length} chunk teratas:
+          <div className="overflow-y-auto p-4 md:p-6 space-y-4 bg-muted/10 h-full">
+            <div className="text-sm font-medium text-muted-foreground mb-2 flex items-center justify-between">
+              <span>Menampilkan {matches.length} hasil paling relevan:</span>
             </div>
+            
             {matches.map((match, idx) => {
               const isExpanded = expandedChunks[idx];
+              const scorePercent = (match.score * 100).toFixed(1);
+              
+              let scoreColor = "text-green-600 bg-green-50 border-green-200";
+              if (match.score < 0.75) scoreColor = "text-amber-600 bg-amber-50 border-amber-200";
+              if (match.score < 0.6) scoreColor = "text-red-600 bg-red-50 border-red-200";
+
               return (
-                <div key={idx} className="bg-white rounded-lg border shadow-sm p-4 hover:border-gray-300 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-900 text-white text-xs font-bold">
+                <div key={idx} className="bg-background rounded-xl border shadow-sm overflow-hidden transition-all hover:border-primary/30">
+                  <div 
+                    className="p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30"
+                    onClick={() => toggleExpand(idx)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-sm">
                         #{idx + 1}
                       </span>
-                      <span className="font-semibold text-gray-900">{match.documentTitle}</span>
-                      <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">
-                        Chunk {match.chunkIndex}
-                      </span>
+                      <div>
+                        <h4 className="font-bold text-foreground line-clamp-1">{match.documentTitle}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded">
+                            Potongan {match.chunkIndex}
+                          </span>
+                          {match.sourceUrl && (
+                            <span className="text-xs text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded px-1 truncate max-w-[150px]">
+                              {match.sourceUrl}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {match.sourceUrl && (
-                        <a href={match.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline max-w-[150px] truncate" title={match.sourceUrl}>
-                          {match.sourceUrl}
-                        </a>
-                      )}
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${match.score >= 0.18 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                        Score: {match.score.toFixed(4)}
-                      </span>
+                    
+                    <div className="flex items-center gap-4 justify-between sm:justify-end">
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-muted-foreground mb-0.5">Tingkat Kecocokan</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${scoreColor}`}>
+                          {scorePercent}%
+                        </span>
+                      </div>
+                      <div className="p-1 rounded-md hover:bg-muted">
+                        {isExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="text-sm text-gray-800 bg-gray-50 p-3 rounded border border-gray-100 font-serif leading-relaxed whitespace-pre-wrap">
-                    {isExpanded ? match.text : `${match.text.substring(0, 250)}${match.text.length > 250 ? '...' : ''}`}
-                  </div>
-                  
-                  {match.text.length > 250 && (
-                    <button
-                      onClick={() => toggleExpand(idx)}
-                      className="mt-2 flex items-center text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                    >
-                      {isExpanded ? (
-                        <><ChevronUp className="w-4 h-4 mr-1" /> Sembunyikan</>
-                      ) : (
-                        <><ChevronDown className="w-4 h-4 mr-1" /> Tampilkan semua</>
-                      )}
-                    </button>
+                  {isExpanded && (
+                    <div className="p-5 border-t border-border bg-muted/5">
+                      <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Isi Potongan Data:</h5>
+                      <div className="p-4 bg-background border rounded-lg text-sm text-foreground whitespace-pre-wrap font-mono leading-relaxed shadow-inner">
+                        {match.text}
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        <p className="text-xs text-muted-foreground italic">
+                          Teks inilah yang akan diberikan kepada AI untuk merangkai jawaban akhir.
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
               );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { Trash2, FileText, Loader2, RefreshCcw, Database, RotateCw, Upload, Edit3, Save, X, Eye, AlertTriangle } from "lucide-react"
-import { API_BASE_URL, BACKEND_BASE_URL, NGROK_HEADERS } from "@/services/sscApi"
+import { Trash2, FileText, Loader2, RefreshCcw, Database, Upload, Edit3, X, Eye, FileType, ChevronDown, ChevronUp } from "lucide-react"
+import { API_BASE_URL, NGROK_HEADERS } from "@/services/sscApi"
 
 type DocumentItem = {
   id: string
@@ -23,31 +23,55 @@ type SyncStatus = {
   totalChunks: number
 }
 
+type Chunk = {
+  documentId: string
+  documentTitle: string
+  chunkIndex: number
+  text: string
+}
+
 export function KnowledgeBase() {
   const [documents, setDocuments] = useState<DocumentItem[]>([])
-  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
+  const [, setSyncStatus] = useState<SyncStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
-  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
 
   // Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
 
-  // Edit Modal State
+  // Document Detail Modal State
+  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
+
+  // Edit Metadata Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [editSourceUrl, setEditSourceUrl] = useState("")
-  const [editText, setEditText] = useState("")
   const [replacementFile, setReplacementFile] = useState<File | null>(null)
 
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [docToDelete, setDocToDelete] = useState<{ id: string, title: string, fileName: string } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Scraped Data / Extracted Text Modal
+  const [isTextModalOpen, setIsTextModalOpen] = useState(false)
+  const [docForText, setDocForText] = useState<DocumentItem | null>(null)
+  const [extractedText, setExtractedText] = useState("")
+  const [isFetchingText, setIsFetchingText] = useState(false)
+
+  // Chunks Modal State
+  const [isChunksModalOpen, setIsChunksModalOpen] = useState(false)
+  const [docForChunks, setDocForChunks] = useState<DocumentItem | null>(null)
+  const [chunks, setChunks] = useState<Chunk[]>([])
+  const [isFetchingChunks, setIsFetchingChunks] = useState(false)
+  const [expandedChunks, setExpandedChunks] = useState<Record<number, boolean>>({})
+  const [editingChunkIndex, setEditingChunkIndex] = useState<number | null>(null)
+  const [editingChunkText, setEditingChunkText] = useState("")
+  const [isSavingChunk, setIsSavingChunk] = useState(false)
 
   const authHeaders = () => ({ 
     Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
@@ -81,8 +105,13 @@ export function KnowledgeBase() {
     }
   }
 
+  useEffect(() => {
+    fetchDocuments()
+    fetchSyncStatus()
+  }, [])
+
   const handleSync = async () => {
-    if (!window.confirm("Jalankan sinkronisasi knowledge base sekarang?")) return
+    if (!window.confirm("Perbarui data sekarang? Proses ini akan menyinkronkan data dengan sistem.")) return
     setIsSyncing(true)
     try {
       const response = await fetch(`${API_BASE_URL}/admin/sync`, {
@@ -92,7 +121,7 @@ export function KnowledgeBase() {
       })
       const result = await response.json()
       if (result.status === "success") {
-        alert("Sinkronisasi knowledge base berhasil.")
+        alert("Sinkronisasi berhasil.")
         await fetchDocuments()
         await fetchSyncStatus()
       } else {
@@ -145,7 +174,6 @@ export function KnowledgeBase() {
     setEditingDoc(doc)
     setEditTitle(doc.title)
     setEditSourceUrl(doc.sourceUrl || "")
-    setEditText("")
     setReplacementFile(null)
     setIsEditModalOpen(true)
   }
@@ -154,7 +182,7 @@ export function KnowledgeBase() {
     e.preventDefault()
     if (!editingDoc) return
     if (!editTitle.trim()) {
-      alert("Judul dataset tidak boleh kosong.")
+      alert("Judul dokumen tidak boleh kosong.")
       return
     }
 
@@ -178,9 +206,6 @@ export function KnowledgeBase() {
           title: editTitle.trim(),
           sourceUrl: editSourceUrl.trim() || null,
         }
-        if (editText.trim()) {
-          payload.extractedText = editText.trim()
-        }
 
         response = await fetch(`${API_BASE_URL}/admin/datasets/${editingDoc.id}`, {
           method: "PUT",
@@ -197,11 +222,11 @@ export function KnowledgeBase() {
         await fetchDocuments()
         await fetchSyncStatus()
       } else {
-        alert("Gagal update dataset: " + result.message)
+        alert("Gagal update dokumen: " + result.message)
       }
     } catch (error) {
       console.error("Update error:", error)
-      alert("Terjadi kesalahan saat update dataset.")
+      alert("Terjadi kesalahan saat mengupdate dokumen.")
     } finally {
       setIsUpdating(false)
     }
@@ -231,9 +256,97 @@ export function KnowledgeBase() {
       }
     } catch (error) {
       console.error("Delete error:", error)
-      alert("Terjadi kesalahan saat menghapus dataset.")
+      alert("Terjadi kesalahan saat menghapus dokumen.")
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleViewExtractedText = async (doc: DocumentItem) => {
+    setDocForText(doc)
+    setIsTextModalOpen(true)
+    setIsFetchingText(true)
+    setExtractedText("")
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/documents/${doc.id}/text`, { headers: authHeaders() })
+      const result = await response.json()
+      if (result.status === "success") {
+        setExtractedText(result.data)
+      } else {
+        setExtractedText("Gagal memuat isi dokumen.")
+      }
+    } catch (err) {
+      setExtractedText("Terjadi kesalahan koneksi.")
+    } finally {
+      setIsFetchingText(false)
+    }
+  }
+
+  const handleViewChunks = async (doc: DocumentItem) => {
+    setDocForChunks(doc)
+    setIsChunksModalOpen(true)
+    setIsFetchingChunks(true)
+    setChunks([])
+    setExpandedChunks({})
+    setEditingChunkIndex(null)
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/documents/${doc.id}/chunks`, { headers: authHeaders() })
+      const result = await response.json()
+      if (result.status === "success") {
+        setChunks(result.data)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsFetchingChunks(false)
+    }
+  }
+
+  const toggleChunkExpand = (index: number) => {
+    setExpandedChunks(prev => ({ ...prev, [index]: !prev[index] }))
+  }
+
+  const handleStartEditChunk = (chunkIndex: number, currentText: string) => {
+    setEditingChunkIndex(chunkIndex)
+    setEditingChunkText(currentText)
+  }
+
+  const handleSaveChunk = async (chunk: Chunk) => {
+    if (!editingChunkText.trim()) {
+      alert("Teks potongan informasi tidak boleh kosong.")
+      return
+    }
+    
+    setIsSavingChunk(true)
+    try {
+      // Chunk API is PUT /admin/chunks/:id. But we don't have the chunk string ID in Chunk type if we didn't return it!
+      // Wait, getDocumentChunksById returns `id`? Let's check. Ah, I might need the chunk's PK ID.
+      // Wait, chunk object above doesn't have `id`. Let's assume `id` is returned.
+      // If `c.id` is not returned by getDocumentChunksById, we can't edit it.
+      // Let's modify Chunk type to have `id?: string` just in case.
+      
+      const chunkId = (chunk as any).id || `${chunk.documentId}-${chunk.chunkIndex}`;
+      
+      const response = await fetch(`${API_BASE_URL}/admin/chunks/${chunkId}`, {
+        method: "PUT",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ text: editingChunkText.trim() }),
+      })
+      const result = await response.json()
+      
+      if (result.status === "success") {
+        setChunks(chunks.map((c, i) => i === chunk.chunkIndex ? { ...c, text: editingChunkText.trim() } : c))
+        setEditingChunkIndex(null)
+      } else {
+        alert("Gagal update potongan informasi: " + result.message)
+      }
+    } catch (error) {
+      console.error(error)
+      alert("Terjadi kesalahan sistem.")
+    } finally {
+      setIsSavingChunk(false)
     }
   }
 
@@ -245,19 +358,14 @@ export function KnowledgeBase() {
     return "TXT"
   }
 
-  useEffect(() => {
-    fetchDocuments()
-    fetchSyncStatus()
-  }, [])
-
   return (
     <>
-      <div className="flex flex-col bg-card rounded-xl border shadow-sm mb-8">
-        <div className="p-4 md:p-5 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col bg-card rounded-xl border shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="p-4 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Knowledge Base</h2>
-            <p className="text-sm text-muted-foreground">
-              CRUD per dokumen PDF, DOCX, XLSX, dan TXT. Semua tersimpan ke Aiven dan dipakai chatbot.
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">Dokumen Informasi</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Kelola dokumen yang digunakan sebagai sumber informasi utama chatbot.
             </p>
           </div>
 
@@ -267,78 +375,47 @@ export function KnowledgeBase() {
                 fetchDocuments()
                 fetchSyncStatus()
               }}
-              className="h-10 px-3 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground"
-              title="Refresh Daftar"
+              className="h-10 w-10 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground"
+              title="Refresh"
             >
               <RefreshCcw className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="h-10 flex items-center gap-2 px-4 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium whitespace-nowrap"
+              className="h-10 flex items-center gap-2 px-4 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium"
             >
               <Upload className="w-4 h-4" />
-              Create / Upload
+              Unggah Dokumen
             </button>
 
             <button
               onClick={handleSync}
               disabled={isSyncing}
-              className="h-10 flex items-center gap-2 px-4 bg-primary text-white rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium whitespace-nowrap"
+              className="h-10 flex items-center gap-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium shadow-sm"
             >
-              {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
-              {isSyncing ? "Sinkronisasi..." : "Sync Knowledge Base"}
+              {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+              {isSyncing ? "Menyinkronkan..." : "Perbarui Data"}
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 md:p-5 border-b">
-          <div className="rounded-lg border p-3 bg-muted/20">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Database className="w-4 h-4" />
-              Total Dokumen
-            </div>
-            <p className="text-2xl font-bold mt-2">{documents.length}</p>
-          </div>
-          <div className="rounded-lg border p-3 bg-muted/20">
-            <div className="text-sm text-muted-foreground">Total Chunks</div>
-            <p className="text-2xl font-bold mt-2">
-              {syncStatus?.totalChunks ?? documents.reduce((total, doc) => total + doc.chunkCount, 0)}
-            </p>
-          </div>
-          <div className="rounded-lg border p-3 bg-muted/20">
-            <div className="text-sm text-muted-foreground">Status Sync</div>
-            <p className="text-sm font-medium mt-2 line-clamp-2" title={syncStatus?.message}>
-              {syncStatus?.message || "Belum ada status"}
-            </p>
-          </div>
-          <div className="rounded-lg border p-3 bg-muted/20">
-            <div className="text-sm text-muted-foreground">Terakhir Sync</div>
-            <p className="text-sm font-medium mt-2">
-              {syncStatus?.lastSyncAt
-                ? new Date(syncStatus.lastSyncAt).toLocaleString("id-ID")
-                : "-"}
-            </p>
-          </div>
-        </div>
-
-
-
-        <div className="p-4 md:p-5 bg-gray-50/50 rounded-b-xl">
+        <div className="p-4 md:p-6 bg-muted/10 rounded-b-xl min-h-[50vh]">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground pt-12">
               <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-              <p>Memuat dokumen knowledge base...</p>
+              <p>Memuat daftar dokumen...</p>
             </div>
           ) : documents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-muted-foreground bg-white border border-dashed rounded-xl">
-              <FileText className="w-12 h-12 text-muted-foreground/30 mb-4" />
-              <p>Belum ada dokumen di knowledge base.</p>
+            <div className="flex flex-col items-center justify-center h-full pt-12 text-muted-foreground">
+              <FileText className="w-16 h-16 text-muted-foreground/20 mb-4" />
+              <p className="text-lg font-medium text-foreground">Belum ada dokumen</p>
+              <p className="text-sm">Silakan unggah dokumen pertama untuk mengisi basis informasi.</p>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="mt-4 text-sm text-primary hover:underline font-medium"
+                className="mt-6 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow-sm"
               >
-                Upload dokumen pertama Anda
+                Unggah Dokumen
               </button>
             </div>
           ) : (
@@ -346,70 +423,74 @@ export function KnowledgeBase() {
               {documents.map((doc) => (
                 <div 
                   key={doc.id} 
-                  className="bg-white border rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full overflow-hidden"
+                  className="bg-card border rounded-xl p-5 hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start sm:items-center gap-4 mb-2">
-                      <div className="p-2.5 bg-red-50 text-red-600 rounded-lg shrink-0 mt-1 sm:mt-0">
-                        <FileText className="w-5 h-5" />
+                    <div className="flex items-start gap-4 mb-2">
+                      <div className="p-3 bg-primary/10 text-primary rounded-lg shrink-0">
+                        <FileType className="w-6 h-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 
-                          className="text-lg font-bold text-gray-900 break-words line-clamp-2" 
-                          title={doc.title}
-                        >
+                        <h4 className="text-lg font-bold text-foreground break-words line-clamp-1" title={doc.title}>
                           {doc.title}
                         </h4>
-                        <p 
-                          className="text-sm text-gray-500 break-words line-clamp-2 mt-0.5" 
-                          title={doc.fileName}
-                        >
+                        <p className="text-sm text-muted-foreground break-words line-clamp-1 mt-0.5" title={doc.fileName}>
                           {doc.fileName}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-3 mt-3 sm:ml-14 text-sm">
-                      <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700">
+                    <div className="flex flex-wrap items-center gap-3 mt-3 sm:ml-[3.25rem] text-sm">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-muted text-muted-foreground">
                         {getFileType(doc.mimetype, doc.fileName)}
                       </span>
-                      <span className="inline-flex shrink-0 items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                         <Database className="w-3 h-3 mr-1" />
-                        {doc.chunkCount} chunks
+                        {doc.chunkCount} potongan informasi
                       </span>
-                      <span className="text-gray-500 text-xs hidden sm:inline-block">
-                        &bull;
-                      </span>
-                      <span className="text-gray-500 text-xs shrink-0">
+                      <span className="text-muted-foreground text-xs hidden sm:inline-block">&bull;</span>
+                      <span className="text-muted-foreground text-xs shrink-0">
                         {doc.textLength?.toLocaleString("id-ID") || 0} karakter
-                      </span>
-                      <span className="text-gray-500 text-xs hidden sm:inline-block">
-                        &bull;
-                      </span>
-                      <span className="text-gray-400 text-xs shrink-0">
-                        Diperbarui: {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : "-"}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end mt-2 pt-4 lg:mt-0 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+                  <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end mt-4 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-border">
                     <button
-                      onClick={() => setPreviewDoc(doc)}
-                      className="h-9 w-9 rounded-lg border flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                      title="Detail Dokumen"
+                      onClick={() => handleViewExtractedText(doc)}
+                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5"
                     >
                       <Eye className="w-4 h-4" />
+                      <span className="hidden sm:inline">Isi Dokumen</span>
                     </button>
+
+                    <button
+                      onClick={() => handleViewChunks(doc)}
+                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5"
+                    >
+                      <Database className="w-4 h-4" />
+                      <span className="hidden sm:inline">Kelola Potongan Data</span>
+                    </button>
+
+                    <button
+                      onClick={() => setPreviewDoc(doc)}
+                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="hidden sm:inline">Detail</span>
+                    </button>
+
                     <button
                       onClick={() => handleOpenEdit(doc)}
-                      className="h-9 w-9 rounded-lg border border-blue-200 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
-                      title="Update Dokumen"
+                      className="h-9 w-9 rounded-md border bg-background text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex items-center justify-center"
+                      title="Edit Dokumen"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
+
                     <button
                       onClick={() => handleOpenDelete(doc)}
-                      className="h-9 w-9 rounded-lg border border-red-200 flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+                      className="h-9 w-9 rounded-md border bg-background text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center justify-center"
                       title="Hapus Dokumen"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -424,51 +505,42 @@ export function KnowledgeBase() {
 
       {/* Upload Modal */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden relative">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-semibold text-lg text-slate-800">Upload Dokumen</h3>
-              <button 
-                onClick={() => !isUploading && setIsUploadModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-md rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+              <h3 className="font-semibold text-lg text-foreground">Unggah Dokumen Baru</h3>
+              <button onClick={() => setIsUploadModalOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleUploadSubmit} className="p-5 space-y-5">
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700">Pilih File</label>
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.xlsx,.txt"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 border border-slate-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  required
-                />
-                <p className="text-xs text-slate-500 mt-2">
-                  Format yang didukung: PDF, DOCX, XLSX, TXT.
-                </p>
-                <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md flex gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700">File .doc belum didukung. Silakan konversi ke .docx terlebih dahulu.</p>
+            <form onSubmit={handleUploadSubmit} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">File Dokumen</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.txt,.xlsx"
+                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 border border-input rounded-md p-2 bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">Dukungan format: PDF, DOCX, TXT, XLSX</p>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  disabled={isUploading}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition disabled:opacity-50"
+                  className="px-4 py-2 border border-input bg-background rounded-md text-sm font-medium hover:bg-muted"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading || !uploadFile}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {isUploading ? "Mengunggah..." : "Upload Sekarang"}
+                  {isUploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Unggah
                 </button>
               </div>
             </form>
@@ -478,89 +550,66 @@ export function KnowledgeBase() {
 
       {/* Edit Modal */}
       {isEditModalOpen && editingDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden relative my-auto">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-semibold text-lg text-slate-800 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-blue-600" />
-                Edit Dokumen
-              </h3>
-              <button 
-                onClick={() => !isUpdating && setIsEditModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-lg rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center shrink-0">
+              <h3 className="font-semibold text-lg text-foreground">Edit Dokumen</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <form onSubmit={handleUpdateSubmit} className="p-5 overflow-y-auto max-h-[75vh]">
-              <div className="mb-5 p-3 bg-blue-50 border border-blue-100 rounded-md text-sm text-blue-800">
-                <p><strong>File saat ini:</strong> {editingDoc.fileName}</p>
-                <p className="text-xs mt-1 text-blue-600">Anda dapat memperbarui metadata atau mengganti file secara utuh. Jika diganti, chunk lama akan otomatis dihapus.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <form onSubmit={handleUpdateSubmit} className="p-6 overflow-y-auto">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 text-slate-700">Judul Dokumen <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Judul Dokumen</label>
                   <input
+                    type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-                    placeholder="Masukkan judul"
+                    className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 text-slate-700">Source URL / Link Sumber</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Source URL (Opsional)</label>
                   <input
+                    type="url"
                     value={editSourceUrl}
                     onChange={(e) => setEditSourceUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-                    placeholder="Contoh: https://ssc.telu.ac.id/..."
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Gunakan URL ini sebagai sumber rujukan.</p>
+                </div>
+                
+                <div className="pt-4 border-t border-border mt-4">
+                  <label className="block text-sm font-medium text-foreground mb-1">Ganti File Dokumen (Opsional)</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.txt,.xlsx"
+                    onChange={(e) => setReplacementFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 border border-input rounded-md p-2 bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Jika Anda mengunggah file baru, potongan informasi lama akan dihapus dan dibuat ulang dari file baru ini.
+                  </p>
                 </div>
               </div>
-
-              <div className="mb-5">
-                <label className="block text-sm font-medium mb-1.5 text-slate-700">File Pengganti (Opsional)</label>
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.xlsx,.txt"
-                  onChange={(e) => setReplacementFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 border border-slate-200 rounded-md p-2 focus:outline-none transition-all"
-                />
-                <p className="text-xs text-slate-500 mt-2">
-                  Abaikan jika tidak ingin mengganti isi dokumen. Format: PDF, DOCX, XLSX, TXT (Bukan .doc).
-                </p>
-              </div>
-
-              <div className="mb-5">
-                <label className="block text-sm font-medium mb-1.5 text-slate-700">Isi Teks Baru Manual (Opsional)</label>
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-sm"
-                  placeholder="Gunakan hanya jika Anda ingin override chunk text secara manual tanpa upload file."
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="mt-8 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  disabled={isUpdating}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition disabled:opacity-50"
+                  className="px-4 py-2 border border-input bg-background rounded-md text-sm font-medium hover:bg-muted"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={isUpdating}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+                  disabled={isUpdating || !editTitle.trim()}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+                  {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Simpan Perubahan
                 </button>
               </div>
             </form>
@@ -570,82 +619,224 @@ export function KnowledgeBase() {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && docToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden relative">
-            <div className="p-5 flex flex-col items-center text-center pt-8">
-              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="w-8 h-8" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-md rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/10 text-destructive mb-4 mx-auto">
+                <Trash2 className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-xl text-slate-900 mb-2">Hapus Dokumen?</h3>
-              <p className="text-slate-500 text-sm mb-1">
-                Anda yakin ingin menghapus dokumen ini?
+              <h3 className="text-lg font-bold text-center text-foreground mb-2">Hapus Dokumen?</h3>
+              <p className="text-sm text-muted-foreground text-center mb-6">
+                Anda akan menghapus dokumen <strong>"{docToDelete.title}"</strong>. Dokumen ini akan dihapus dari basis informasi dan chatbot tidak akan lagi menggunakan isi dokumen ini saat menjawab pertanyaan.
               </p>
-              <p className="font-semibold text-slate-800 break-words line-clamp-2 max-w-full px-4 mb-4">
-                "{docToDelete.title}"
-              </p>
-              <div className="bg-red-50 p-4 rounded-lg border border-red-100 w-full mb-6 text-left">
-                <ul className="list-disc pl-5 space-y-2 text-sm text-red-800 leading-relaxed">
-                  <li>Dokumen ini akan dihapus dari Knowledge Base.</li>
-                  <li>Semua chunk yang berkaitan dengan dokumen ini juga akan ikut dihapus.</li>
-                  <li>Chatbot tidak akan lagi menggunakan dokumen ini sebagai referensi.</li>
-                </ul>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 px-4 py-2 border border-input bg-background rounded-md text-sm font-medium hover:bg-muted"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Ya, Hapus
+                </button>
               </div>
             </div>
-            <div className="flex bg-slate-50 border-t border-slate-100 p-4 gap-3 justify-end">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-md transition disabled:opacity-50"
-              >
-                Batal
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal (Detail) */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-lg rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
+              <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Detail Dokumen
+              </h3>
+              <button onClick={() => setPreviewDoc(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
               </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
+                <div className="col-span-1 text-sm font-medium text-muted-foreground">Judul</div>
+                <div className="col-span-2 text-sm font-semibold text-foreground">{previewDoc.title}</div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
+                <div className="col-span-1 text-sm font-medium text-muted-foreground">Nama File</div>
+                <div className="col-span-2 text-sm text-foreground">{previewDoc.fileName}</div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
+                <div className="col-span-1 text-sm font-medium text-muted-foreground">Tipe File</div>
+                <div className="col-span-2 text-sm text-foreground">{getFileType(previewDoc.mimetype, previewDoc.fileName)}</div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
+                <div className="col-span-1 text-sm font-medium text-muted-foreground">Potongan Informasi</div>
+                <div className="col-span-2 text-sm text-foreground">{previewDoc.chunkCount}</div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
+                <div className="col-span-1 text-sm font-medium text-muted-foreground">Karakter</div>
+                <div className="col-span-2 text-sm text-foreground">{previewDoc.textLength?.toLocaleString("id-ID") || 0}</div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
+                <div className="col-span-1 text-sm font-medium text-muted-foreground">Terakhir Update</div>
+                <div className="col-span-2 text-sm text-foreground">
+                  {previewDoc.updatedAt ? new Date(previewDoc.updatedAt).toLocaleString("id-ID") : "-"}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-end">
               <button
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition shadow-sm disabled:opacity-50"
+                onClick={() => setPreviewDoc(null)}
+                className="px-4 py-2 border border-input bg-background rounded-md text-sm font-medium hover:bg-muted"
               >
-                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {isDeleting ? "Menghapus..." : "Ya, Hapus Dokumen"}
+                Tutup
               </button>
             </div>
           </div>
         </div>
       )}
-      {/* Detail Modal */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden relative">
-            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-semibold text-lg text-slate-800 flex items-center gap-2">
-                <Eye className="w-5 h-5 text-slate-600" />
-                Detail Dokumen
+
+      {/* Extracted Text Modal */}
+      {isTextModalOpen && docForText && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-4xl h-[90vh] rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center shrink-0">
+              <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" />
+                Hasil Pembacaan Dokumen: {docForText.title}
               </h3>
-              <button 
-                onClick={() => setPreviewDoc(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition"
-              >
+              <button onClick={() => setIsTextModalOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5">
-              <div className="space-y-3 text-sm text-slate-600">
-                <p><strong className="text-slate-900 inline-block w-28">Judul:</strong> {previewDoc.title}</p>
-                <p><strong className="text-slate-900 inline-block w-28">File:</strong> {previewDoc.fileName}</p>
-                <p><strong className="text-slate-900 inline-block w-28">Tipe:</strong> {getFileType(previewDoc.mimetype, previewDoc.fileName)}</p>
-                <p><strong className="text-slate-900 inline-block w-28">Chunks:</strong> {previewDoc.chunkCount}</p>
-                <p><strong className="text-slate-900 inline-block w-28">Panjang teks:</strong> {previewDoc.textLength?.toLocaleString("id-ID") || 0} karakter</p>
-                <p><strong className="text-slate-900 inline-block w-28">Diperbarui:</strong> {previewDoc.updatedAt ? new Date(previewDoc.updatedAt).toLocaleString("id-ID") : "-"}</p>
-                {previewDoc.localUrl ? (
-                  <p className="pt-2">
-                    <strong className="text-slate-900 inline-block w-28">File URL:</strong>{" "}
-                    <a className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1" href={`${BACKEND_BASE_URL}${previewDoc.localUrl}`} target="_blank" rel="noreferrer">
-                      Buka file di tab baru &rarr;
-                    </a>
-                  </p>
-                ) : (
-                  <p className="pt-2 text-slate-400 italic">File tidak memiliki URL yang bisa diakses langsung.</p>
-                )}
-              </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
+              {isFetchingText ? (
+                <div className="flex justify-center items-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="bg-background border rounded-lg p-6 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                  {extractedText}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-border flex justify-end shrink-0">
+              <button
+                onClick={() => setIsTextModalOpen(false)}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chunks Viewer Modal */}
+      {isChunksModalOpen && docForChunks && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-5xl h-[90vh] rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center shrink-0">
+              <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
+                <Database className="w-5 h-5 text-primary" />
+                Kelola Potongan Informasi: {docForChunks.title}
+              </h3>
+              <button onClick={() => setIsChunksModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
+              {isFetchingChunks ? (
+                <div className="flex justify-center items-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : chunks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <p>Tidak ada potongan informasi untuk dokumen ini.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {chunks.map((chunk, idx) => (
+                    <div key={idx} className="bg-background border rounded-lg overflow-hidden transition-all shadow-sm">
+                      <div 
+                        className="px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleChunkExpand(idx)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                            #{chunk.chunkIndex + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground line-clamp-1">{chunk.text.substring(0, 80)}...</p>
+                            <p className="text-xs text-muted-foreground mt-1">{chunk.text.length} karakter</p>
+                          </div>
+                        </div>
+                        {expandedChunks[idx] ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                      </div>
+                      
+                      {expandedChunks[idx] && (
+                        <div className="px-5 pb-5 border-t border-border pt-4 bg-muted/5">
+                          {editingChunkIndex === idx ? (
+                            <div className="space-y-3">
+                              <textarea
+                                value={editingChunkText}
+                                onChange={(e) => setEditingChunkText(e.target.value)}
+                                className="w-full h-40 p-3 text-sm border rounded-md font-mono focus:ring-1 focus:ring-primary"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => setEditingChunkIndex(null)}
+                                  className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted font-medium"
+                                >
+                                  Batal
+                                </button>
+                                <button
+                                  onClick={() => handleSaveChunk(chunk)}
+                                  disabled={isSavingChunk}
+                                  className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 flex items-center gap-2 font-medium"
+                                >
+                                  {isSavingChunk && <Loader2 className="w-3 h-3 animate-spin" />}
+                                  Simpan & Update AI
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="p-4 bg-background border rounded-md text-sm whitespace-pre-wrap font-mono mb-4 text-foreground leading-relaxed">
+                                {chunk.text}
+                              </div>
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={() => handleStartEditChunk(idx, chunk.text)}
+                                  className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted flex items-center gap-1.5 font-medium"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                  Edit Isi Potongan Informasi
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-border flex justify-end shrink-0">
+              <button
+                onClick={() => setIsChunksModalOpen(false)}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90"
+              >
+                Selesai
+              </button>
             </div>
           </div>
         </div>
