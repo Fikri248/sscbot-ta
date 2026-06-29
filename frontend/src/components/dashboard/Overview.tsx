@@ -1,4 +1,3 @@
-import { StatCard } from "./StatCard"
 import { FileText, FileType, Clock, RefreshCcw, CheckCircle2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { API_BASE_URL, NGROK_HEADERS } from "@/services/sscApi"
@@ -65,40 +64,65 @@ export function Overview() {
         <p className="text-muted-foreground mt-1">Ringkasan status basis informasi yang digunakan oleh chatbot SSC.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Total Dokumen" 
-          value={stats.totalDatasets.toString()} 
-          delta="Dokumen aktif" 
-          deltaType="positive"
-          icon={FileText}
-        />
-        <div className="bg-card rounded-xl border shadow-sm p-5 space-y-2">
-          <div className="flex items-center text-sm font-medium text-muted-foreground mb-1 gap-2">
-            <FileType className="w-4 h-4" />
-            Distribusi File
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Total Dokumen Card */}
+        <div className="min-w-0 rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-muted-foreground">Total Dokumen</p>
+            <FileText className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="grid grid-cols-2 gap-2 text-sm font-medium">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-3xl font-bold text-foreground">{stats.totalDatasets}</div>
+            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+              Dokumen aktif
+            </span>
+          </div>
+        </div>
+
+        {/* Distribusi File Card */}
+        <div className="min-w-0 rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-muted-foreground">Distribusi File</p>
+            <FileType className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-medium w-full mt-auto">
             <div className="flex justify-between"><span>PDF:</span> <span className="text-primary">{stats.pdfCount}</span></div>
             <div className="flex justify-between"><span>DOCX:</span> <span className="text-primary">{stats.docxCount}</span></div>
             <div className="flex justify-between"><span>TXT:</span> <span className="text-primary">{stats.txtCount}</span></div>
             <div className="flex justify-between"><span>XLSX:</span> <span className="text-primary">{stats.xlsxCount}</span></div>
           </div>
         </div>
-        <StatCard 
-          title="Dokumen Terakhir Diunggah" 
-          value={stats.latestDocument || "-"} 
-          delta={stats.lastUpload ? formatDate(stats.lastUpload) : "Belum ada dokumen"} 
-          deltaType="neutral"
-          icon={Clock}
-        />
-        <StatCard 
-          title="Status Sinkronisasi" 
-          value={sync.isSyncing ? "Proses..." : "Tersinkron"} 
-          delta={formatDate(sync.lastSyncAt)} 
-          deltaType={sync.isSyncing ? "neutral" : "positive"}
-          icon={RefreshCcw}
-        />
+
+        {/* Dokumen Terakhir Diunggah Card */}
+        <div className="min-w-0 rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-muted-foreground">Dokumen Terakhir Diunggah</p>
+            <Clock className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <p
+            className="max-w-full break-words text-lg font-bold leading-snug text-foreground line-clamp-2"
+            title={stats.latestDocument || "Belum ada dokumen"}
+          >
+            {stats.latestDocument || "Belum ada dokumen"}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {stats.lastUpload ? `Diperbarui: ${formatDate(stats.lastUpload)}` : "Belum ada dokumen"}
+          </p>
+        </div>
+
+        {/* Status Sinkronisasi Card */}
+        <div className="min-w-0 rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-muted-foreground">Status Sinkronisasi</p>
+            <RefreshCcw className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">
+            {sync.isSyncing ? "Proses..." : "Tersinkron"}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Terakhir diperbarui: {sync.lastSyncAt ? formatDate(sync.lastSyncAt) : "-"}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
