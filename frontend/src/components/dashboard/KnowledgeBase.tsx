@@ -371,29 +371,18 @@ export function KnowledgeBase() {
   return (
     <>
       <div className="flex flex-col bg-card rounded-xl border shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full overflow-hidden">
-        <div className="p-4 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+        <div className="p-4 md:p-6 border-b flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
             <h2 className="text-2xl font-bold tracking-tight text-foreground">Dokumen Informasi</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Kelola dokumen yang digunakan sebagai sumber informasi utama chatbot.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => {
-                fetchDocuments()
-                fetchSyncStatus()
-              }}
-              className="h-10 w-10 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground shrink-0"
-              title="Refresh"
-            >
-              <RefreshCcw className="w-4 h-4" />
-            </button>
-
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="h-10 flex items-center gap-2 px-4 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium shrink-0"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto h-12 px-5 border border-input bg-background rounded-xl hover:bg-muted transition text-sm font-medium whitespace-nowrap"
             >
               <Upload className="w-4 h-4" />
               Unggah Dokumen
@@ -402,7 +391,7 @@ export function KnowledgeBase() {
             <button
               onClick={handleSync}
               disabled={isSyncing}
-              className="h-10 flex items-center gap-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium shadow-sm shrink-0"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto h-12 px-5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium shadow-sm whitespace-nowrap"
             >
               {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
               {isSyncing ? "Proses..." : "Perbarui Data"}
