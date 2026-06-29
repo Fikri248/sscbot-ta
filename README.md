@@ -152,6 +152,17 @@ For backend deployment, there are two supported options:
 **Database:**  
 Aiven MySQL is used to store documents, chunks, embeddings, users, and chat history.
 
+## Demo Credentials
+
+After opening the live frontend, users can log in using either the admin demo account or the regular user demo account depending on the feature they want to test.
+
+| Role | Email | Password | Access |
+|------|-------|----------|--------|
+| Admin | `admin` | `admin123` | Admin dashboard, document management, sync, and query testing |
+| User | `kelompok4@sscbot` | `kelompok4` | Student/user chatbot interface |
+
+> Note: These credentials are intended for demo usage only. Do not use them as production credentials.
+
 ## Setup Project
 
 ### 1. Clone Repository
