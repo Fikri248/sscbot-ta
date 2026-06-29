@@ -37,3 +37,14 @@ After running the SQL script:
 
 > **Important Security Note:**  
 > These SQL scripts contain **no secrets**. API keys, JWT secrets, and database credentials must be configured securely in your `.env` files.
+
+## Demo Credentials
+
+After running the seed script, the following demo accounts are available:
+
+| Role | Email/Login | Password | Access |
+|------|-------------|----------|--------|
+| Admin | `admin` | `admin123` | Admin dashboard, document management, sync, and query testing |
+| User | `kelompok4@sscbot` | `kelompok4` | Student/user chatbot interface |
+
+> These credentials are for demo/testing only.
