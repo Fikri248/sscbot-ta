@@ -468,11 +468,22 @@ export const updateDocumentChunk = async (req: Request, res: Response) => {
 export const getDocumentText = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const [rows]: any = await pool.query("SELECT extractedText FROM documents WHERE id = ? LIMIT 1", [id]);
+    const [rows]: any = await pool.query(
+      "SELECT text FROM document_chunks WHERE documentId = ? ORDER BY chunkIndex ASC",
+      [id]
+    );
+
     if (!rows.length) {
-      return res.status(404).json({ status: "error", message: "Dokumen tidak ditemukan" });
+      // Check if document exists at all
+      const [docRows]: any = await pool.query("SELECT id FROM documents WHERE id = ? LIMIT 1", [id]);
+      if (!docRows.length) {
+        return res.status(404).json({ status: "error", message: "Dokumen tidak ditemukan" });
+      }
+      return res.json({ status: "success", data: "Isi dokumen belum tersedia atau gagal diproses." });
     }
-    return res.json({ status: "success", data: rows[0].extractedText });
+
+    const reconstructedText = rows.map((row: any) => row.text).join("\\n\\n");
+    return res.json({ status: "success", data: reconstructedText });
   } catch (error) {
     console.error("Get document text error:", error);
     return res.status(500).json({ status: "error", message: "Gagal mengambil teks dokumen" });

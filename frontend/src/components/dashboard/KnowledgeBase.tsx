@@ -270,14 +270,18 @@ export function KnowledgeBase() {
     
     try {
       const response = await fetch(`${API_BASE_URL}/admin/documents/${doc.id}/text`, { headers: authHeaders() })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
       const result = await response.json()
       if (result.status === "success") {
-        setExtractedText(result.data)
+        setExtractedText(result.data || "Dokumen ini kosong atau belum memiliki teks hasil ekstraksi.")
       } else {
-        setExtractedText("Gagal memuat isi dokumen.")
+        setExtractedText(result.message || "Gagal memuat isi dokumen.")
       }
-    } catch (err) {
-      setExtractedText("Terjadi kesalahan koneksi.")
+    } catch (err: any) {
+      console.error("Fetch text error:", err)
+      setExtractedText("Terjadi kesalahan saat memuat isi dokumen. Silakan periksa koneksi Anda atau coba muat ulang halaman.")
     } finally {
       setIsFetchingText(false)
     }
@@ -293,12 +297,18 @@ export function KnowledgeBase() {
     
     try {
       const response = await fetch(`${API_BASE_URL}/admin/documents/${doc.id}/chunks`, { headers: authHeaders() })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
       const result = await response.json()
       if (result.status === "success") {
         setChunks(result.data)
+      } else {
+        alert(result.message || "Gagal mengambil daftar potongan informasi.")
       }
-    } catch (err) {
-      console.error(err)
+    } catch (err: any) {
+      console.error("Fetch chunks error:", err)
+      alert("Terjadi kesalahan koneksi saat memuat data potongan informasi.")
     } finally {
       setIsFetchingChunks(false)
     }
@@ -360,7 +370,7 @@ export function KnowledgeBase() {
 
   return (
     <>
-      <div className="flex flex-col bg-card rounded-xl border shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col bg-card rounded-xl border shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full overflow-hidden">
         <div className="p-4 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">Dokumen Informasi</h2>
@@ -375,7 +385,7 @@ export function KnowledgeBase() {
                 fetchDocuments()
                 fetchSyncStatus()
               }}
-              className="h-10 w-10 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground"
+              className="h-10 w-10 border rounded-md hover:bg-muted transition flex items-center justify-center text-muted-foreground shrink-0"
               title="Refresh"
             >
               <RefreshCcw className="w-4 h-4" />
@@ -383,7 +393,7 @@ export function KnowledgeBase() {
 
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="h-10 flex items-center gap-2 px-4 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium"
+              className="h-10 flex items-center gap-2 px-4 border border-input bg-background rounded-md hover:bg-muted transition text-sm font-medium shrink-0"
             >
               <Upload className="w-4 h-4" />
               Unggah Dokumen
@@ -392,15 +402,15 @@ export function KnowledgeBase() {
             <button
               onClick={handleSync}
               disabled={isSyncing}
-              className="h-10 flex items-center gap-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium shadow-sm"
+              className="h-10 flex items-center gap-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition disabled:opacity-50 text-sm font-medium shadow-sm shrink-0"
             >
               {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
-              {isSyncing ? "Menyinkronkan..." : "Perbarui Data"}
+              {isSyncing ? "Proses..." : "Perbarui Data"}
             </button>
           </div>
         </div>
 
-        <div className="p-4 md:p-6 bg-muted/10 rounded-b-xl min-h-[50vh]">
+        <div className="p-4 md:p-6 bg-muted/10 rounded-b-xl min-h-[50vh] w-full max-w-full">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground pt-12">
               <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
@@ -410,7 +420,7 @@ export function KnowledgeBase() {
             <div className="flex flex-col items-center justify-center h-full pt-12 text-muted-foreground">
               <FileText className="w-16 h-16 text-muted-foreground/20 mb-4" />
               <p className="text-lg font-medium text-foreground">Belum ada dokumen</p>
-              <p className="text-sm">Silakan unggah dokumen pertama untuk mengisi basis informasi.</p>
+              <p className="text-sm text-center">Silakan unggah dokumen pertama untuk mengisi basis informasi.</p>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
                 className="mt-6 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow-sm"
@@ -419,82 +429,87 @@ export function KnowledgeBase() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-4 w-full max-w-full">
               {documents.map((doc) => (
                 <div 
                   key={doc.id} 
-                  className="bg-card border rounded-xl p-5 hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full"
+                  className="bg-card border rounded-xl p-4 sm:p-5 hover:shadow-md transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-4 w-full max-w-full overflow-hidden"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-4 mb-2">
-                      <div className="p-3 bg-primary/10 text-primary rounded-lg shrink-0">
+                      <div className="p-3 bg-primary/10 text-primary rounded-lg shrink-0 hidden sm:block">
                         <FileType className="w-6 h-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-lg font-bold text-foreground break-words line-clamp-1" title={doc.title}>
+                        <h4 className="text-base sm:text-lg font-bold text-foreground break-words" title={doc.title}>
                           {doc.title}
                         </h4>
-                        <p className="text-sm text-muted-foreground break-words line-clamp-1 mt-0.5" title={doc.fileName}>
+                        <p className="text-xs sm:text-sm text-muted-foreground break-all mt-0.5" title={doc.fileName}>
                           {doc.fileName}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-3 mt-3 sm:ml-[3.25rem] text-sm">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-muted text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 sm:ml-[3.25rem] text-xs sm:text-sm">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded font-semibold bg-muted text-muted-foreground">
                         {getFileType(doc.mimetype, doc.fileName)}
                       </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary border border-primary/20">
                         <Database className="w-3 h-3 mr-1" />
                         {doc.chunkCount} potongan informasi
                       </span>
-                      <span className="text-muted-foreground text-xs hidden sm:inline-block">&bull;</span>
-                      <span className="text-muted-foreground text-xs shrink-0">
+                      <span className="text-muted-foreground hidden sm:inline-block">&bull;</span>
+                      <span className="text-muted-foreground shrink-0">
                         {doc.textLength?.toLocaleString("id-ID") || 0} karakter
                       </span>
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end mt-4 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-border">
+                  <div className="flex flex-wrap items-center gap-2 xl:shrink-0 xl:justify-end mt-2 pt-3 border-t xl:border-t-0 border-border">
                     <button
                       onClick={() => handleViewExtractedText(doc)}
-                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5"
+                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5 shrink-0"
+                      title="Lihat isi dokumen mentah yang berhasil diekstrak"
                     >
                       <Eye className="w-4 h-4" />
-                      <span className="hidden sm:inline">Isi Dokumen</span>
+                      <span>Isi Dokumen</span>
                     </button>
 
                     <button
                       onClick={() => handleViewChunks(doc)}
-                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5"
+                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5 shrink-0"
+                      title="Lihat dan edit potongan-potongan informasi (chunks) untuk chatbot"
                     >
                       <Database className="w-4 h-4" />
-                      <span className="hidden sm:inline">Kelola Potongan Data</span>
+                      <span>Kelola Potongan Data</span>
                     </button>
 
                     <button
                       onClick={() => setPreviewDoc(doc)}
-                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5"
+                      className="h-9 px-3 rounded-md border bg-background text-sm font-medium hover:bg-muted transition-colors flex items-center gap-1.5 shrink-0"
+                      title="Lihat metadata detail dokumen"
                     >
                       <FileText className="w-4 h-4" />
-                      <span className="hidden sm:inline">Detail</span>
+                      <span>Detail</span>
                     </button>
 
-                    <button
-                      onClick={() => handleOpenEdit(doc)}
-                      className="h-9 w-9 rounded-md border bg-background text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex items-center justify-center"
-                      title="Edit Dokumen"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2 ml-auto xl:ml-0">
+                      <button
+                        onClick={() => handleOpenEdit(doc)}
+                        className="h-9 w-9 rounded-md border bg-background text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex items-center justify-center shrink-0"
+                        title="Edit Dokumen"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
 
-                    <button
-                      onClick={() => handleOpenDelete(doc)}
-                      className="h-9 w-9 rounded-md border bg-background text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center justify-center"
-                      title="Hapus Dokumen"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <button
+                        onClick={() => handleOpenDelete(doc)}
+                        className="h-9 w-9 rounded-md border bg-background text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center justify-center shrink-0"
+                        title="Hapus Dokumen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
