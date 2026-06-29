@@ -107,6 +107,37 @@ flowchart TD
 
 This design solves the problem where staff previously would need developer help to change chatbot answers.
 
+## Dataset Location
+
+The dataset used as the chatbot knowledge base is stored in:
+
+```txt
+backend/dataset
+```
+
+From the project root, the full relative path is:
+
+```txt
+ssc-bot/backend/dataset
+```
+
+This folder contains source documents used by the RAG pipeline. During the synchronization process, the backend reads the files from this folder, extracts their text content, splits the content into smaller information pieces, generates embeddings, and stores the processed data in the MySQL database tables such as `documents` and `document_chunks`.
+
+After the dataset is synchronized, the chatbot can retrieve relevant information from the database when answering student questions.
+
+### Dataset Processing Flow
+
+```txt
+backend/dataset
+→ text extraction
+→ chunking into information pieces
+→ embedding generation
+→ stored in MySQL (`documents` and `document_chunks`)
+→ retrieved by the chatbot using RAG
+→ answered by the LLM
+```
+
+When files inside `backend/dataset` are added or updated, the dataset must be synchronized so the latest information is stored in the database and can be used by the chatbot. This can be done from the Admin Dashboard by clicking `Perbarui Data`, or by running the available backend synchronization script.
 ## Technical Development Approach
 
 - Frontend built with React, TypeScript, Vite, Tailwind CSS.
