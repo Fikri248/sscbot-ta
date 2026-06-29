@@ -156,8 +156,8 @@ Aiven MySQL is used to store documents, chunks, embeddings, users, and chat hist
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/Baihaqi2275/ssc-bot.git
-cd ssc-bot
+git clone https://github.com/Fikri248/sscbot-ta.git
+cd sscbot-ta
 ```
 
 ### 2. Install Dependencies
